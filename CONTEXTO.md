@@ -78,7 +78,7 @@ Configuración inicial de n8n (una sola vez): pendiente de documentar en la tare
 
 - **Ramas:** una rama por tarea, con el ID de la tarea: `feat/T06-ms-crear`, `fix/T12-validacion-fecha`. Nunca se trabaja directo en `main`, salvo para reservar tareas (sección 6).
 - **Commits:** en español, con prefijo: `feat:`, `fix:`, `docs:`, `chore:`, `test:`. Ejemplo: `feat(ms-crear): validar documento duplicado`.
-- **Pull requests:** toda rama entra a `main` por pull request revisado por al menos otro integrante.
+- **Pull requests:** toda rama entra a `main` por pull request. No hace falta esperar la revisión de otro integrante: quien hace la tarea comprueba que funciona, abre el pull request y hace el merge. Pedir una revisión es opcional, y conviene cuando el cambio afecta a otros (sección 8, punto 4).
 - **Nombres:** los nombres del dominio siguen el diseño, en español (`persona`, `numeroDocumento`, `log_transaccion`). En TypeScript se usa camelCase y en la base de datos snake_case.
 - **Secretos:** nunca se suben llaves ni contraseñas. Solo `.env.example` con los nombres de las variables.
 - **Zonas de trabajo:** cada tarea indica su carpeta. Tocar carpetas de otra tarea en curso requiere avisar al responsable.
@@ -88,7 +88,7 @@ Configuración inicial de n8n (una sola vez): pendiente de documentar en la tare
 **Hecho:**
 - T01: estructura del monorepo con un `README.md` en cada carpeta que aún no tiene código, documentación copiada en `docs/`, `README.md`, `CONTEXTO.md`, `AGENTS.md`, `CLAUDE.md`, `.gitignore`, `.gitattributes` y `.env.example` con todas las variables previstas.
 - T02: `docker-compose.yml` base con las redes `frontal` y `datos`, los volúmenes `pgdata`, `n8n_data` y `keycloak_data`, Traefik y PostgreSQL 16 con pgvector. Probado el 2026-11-16: los dos contenedores quedan `healthy`, Traefik responde en el puerto 80, la extensión `vector` funciona y PostgreSQL solo está en la red `datos`, sin puertos publicados. Keycloak, n8n, el frontend y los microservicios quedan como bloques comentados (incluido el perfil `consultar`).
-- T03 (en revisión): `database/init.sql` con las tablas `persona`, `log_transaccion` y `persona_embedding`, la vista `vista_personas`, los índices del log, los seis usuarios de base de datos y sus permisos. `database/init-usuarios.sh` les asigna las contraseñas de `.env`. `database/verificar.sh` comprueba todo; probado el 2026-11-16 sin fallos. Lo que debe saber quien programe contra la base está en `database/README.md`.
+- T03: `database/init.sql` con las tablas `persona`, `log_transaccion` y `persona_embedding`, la vista `vista_personas`, los índices del log, los seis usuarios de base de datos y sus permisos. `database/init-usuarios.sh` les asigna las contraseñas de `.env`. `database/verificar.sh` comprueba todo; probado el 2026-11-16 sin fallos. Lo que debe saber quien programe contra la base está en `database/README.md`.
 
 **Todavía no existe:** Keycloak (T04), ningún microservicio, frontend ni flujo de n8n. La base de datos está vacía: los datos de prueba son la tarea T17.
 
@@ -105,13 +105,13 @@ Fases: Fase 0, base del repositorio (T01 y T02). Fase 1, cimientos (T03 a T05). 
 
 ## 6. Tablero de tareas
 
-Estados posibles: **Pendiente**, **En curso**, **En revisión**, **Hecha**.
+Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 
 | ID | Tarea | Carpeta principal | Depende de | Estado | Responsable | Rama |
 | --- | --- | --- | --- | --- | --- | --- |
 | T01 | Estructura del monorepo, README, CONTEXTO.md, AGENTS.md, CLAUDE.md, .gitignore, .env.example | raíz, docs/ | | Hecha | Carlos Ruidiaz | main (commit inicial) |
 | T02 | docker-compose.yml base: redes frontal y datos, volúmenes, Traefik, PostgreSQL con pgvector, perfil `consultar` | raíz | T01 | Hecha | Carlos Ruidiaz | main (commit inicial) |
-| T03 | `database/init.sql`: tablas, vista_personas, índices, usuarios de BD y permisos | database/ | T02 | En revisión | Carlos Ruidiaz | feat/T03-base-de-datos |
+| T03 | `database/init.sql`: tablas, vista_personas, índices, usuarios de BD y permisos | database/ | T02 | Hecha | Carlos Ruidiaz | feat/T03-base-de-datos |
 | T04 | Keycloak: realm.json con cliente del frontend (PKCE), roles, usuarios de prueba e importación automática | keycloak/ | T02 | Pendiente | | |
 | T05 | `libs/common`: entidad Persona, DTO y validaciones, guard JWT con roles, módulo de auditoría transaccional | libs/common/ | T03, T04 | Pendiente | | |
 | T06 | ms-crear | services/ms-crear/ | T05 | Pendiente | | |
@@ -135,7 +135,7 @@ Después de T05, el trabajo se puede repartir en cuatro frentes paralelos con po
 
 ### 6.1 Notas de traspaso
 
-Una nota por cada tarea **En curso** o **En revisión**, para que cualquiera (incluida otra persona o su IA) pueda retomarla sin preguntar. Se actualiza al cerrar cada sesión de trabajo, aunque la tarea no esté terminada, y se borra cuando la tarea pasa a **Hecha**.
+Una nota por cada tarea **En curso**, para que cualquiera (incluida otra persona o su IA) pueda retomarla sin preguntar. Se actualiza al cerrar cada sesión de trabajo, aunque la tarea no esté terminada, y se borra cuando la tarea pasa a **Hecha**.
 
 Formato de cada nota:
 
@@ -146,10 +146,7 @@ Formato de cada nota:
 - Para retomar: archivos clave, comandos, decisiones a medias o problemas encontrados.
 ```
 
-#### T03 · database/init.sql (Carlos Ruidiaz, feat/T03-base-de-datos, 2026-11-16)
-- Hecho: esquema completo, usuarios, permisos y contraseñas desde `.env`. `database/verificar.sh` pasa sin fallos sobre una base recién creada.
-- Falta: revisión de otro integrante y merge. Nada pendiente de código.
-- Para retomar: para revisar, `docker compose down -v`, `docker compose up -d` y ejecutar `database/verificar.sh` (comando en la sección 3). El `docker-compose.yml` cambió: el contenedor `postgres` ahora exige las seis `DB_PASSWORD_*` y monta `init-usuarios.sh`.
+(No hay tareas en curso.)
 
 ## 7. Decisiones tomadas durante la implementación
 
@@ -157,6 +154,7 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 
 | Fecha | Decisión | Motivo | Quién |
 | --- | --- | --- | --- |
+| 2026-11-16 | Se quita la revisión obligatoria de los pull requests y el estado «En revisión». Quien termina una tarea la marca **Hecha** en su rama y hace el merge de su propio pull request | Evitar que las tareas queden bloqueadas esperando a otro integrante. La reserva de tareas en `main` se mantiene | Carlos Ruidiaz |
 | 2026-11-16 | Los servicios que insertan en el log no pueden usar `RETURNING` (no tienen SELECT sobre `log_transaccion`). El módulo de auditoría de T05 debe insertar con una consulta parametrizada propia, porque `save()` e `insert()` de TypeORM agregan `RETURNING id` | Es consecuencia de los permisos de la sección 6.3 del diseño, que se respetan tal cual. Comprobado en T03 | Carlos Ruidiaz |
 | 2026-11-16 | El esquema lo define `database/init.sql`. TypeORM va con `synchronize: false` | Los usuarios de los servicios no pueden crear ni alterar tablas | Carlos Ruidiaz |
 | 2026-11-16 | `persona_embedding` usa las columnas del nodo PGVector de n8n (`id`, `text`, `metadata`, `embedding`), con el documento en `metadata`, y no fija la dimensión del vector. Su dueño es `usr_n8n` | El diseño dice que la administra n8n. La dimensión depende del modelo de embeddings que elija T14 | Carlos Ruidiaz |
@@ -174,7 +172,7 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 3. **Trabajar:** crea la rama de la tarea y trabaja solo en su carpeta principal.
 4. **Cambios que afectan a otros:** si modificas `libs/common`, el esquema de base de datos, `docker-compose.yml` o un contrato de API, regístralo en la sección 7 y avisa al grupo antes de hacer merge.
 5. **Pausar:** si dejas la tarea a medias, sube tu rama y actualiza su nota de traspaso (sección 6.1) en `main` con un commit que solo toque este archivo, para que el resto vea dónde quedó.
-6. **Terminar:** en tu misma rama, actualiza este documento: estado **En revisión**, lo que quedó hecho en la sección 5, cómo ejecutarlo en la sección 3 si cambió, y las decisiones en la sección 7. Abre el pull request. Quien hace el merge pasa el estado a **Hecha** y borra la nota de traspaso.
+6. **Terminar:** en tu misma rama, actualiza este documento: estado **Hecha**, lo que quedó hecho en la sección 5, cómo ejecutarlo en la sección 3 si cambió, las decisiones en la sección 7, y borra la nota de traspaso de la tarea. Comprueba que lo que hiciste funciona, abre el pull request y haz tú mismo el merge. Si el pull request tiene conflictos, intégrale `main` a tu rama y resuélvelos antes.
 7. **Edita solo tus filas y tus notas.** Cada quien modifica únicamente las filas de sus propias tareas. Así casi nunca hay conflictos en este archivo.
 8. **Al cerrar una sesión de trabajo**, actualiza la fecha de «Última actualización» y la fase actual si cambió.
 
