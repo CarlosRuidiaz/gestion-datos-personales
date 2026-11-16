@@ -76,27 +76,43 @@ services:
       timeout: 5s
       retries: 5
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8
+    restart: unless-stopped
+    # Modo de desarrollo (HTTP, base de datos interna en el volumen). Importa keycloak/realm.json
+    # solo si el realm todavía no existe.
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Falta KEYCLOAK_ADMIN_PASSWORD en .env}
+      # URL pública fija: es el emisor (iss) de todos los tokens. Los microservicios pueden
+      # llegar por la red interna (http://keycloak:8080) para leer las llaves públicas.
+      KC_HOSTNAME: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+      # Contraseñas de los usuarios de prueba: realm.json las toma de aquí al importarse.
+      KEYCLOAK_USUARIO_ADMIN_PASSWORD: ${KEYCLOAK_USUARIO_ADMIN_PASSWORD:?Falta KEYCLOAK_USUARIO_ADMIN_PASSWORD en .env}
+      KEYCLOAK_USUARIO_CONSULTOR_PASSWORD: ${KEYCLOAK_USUARIO_CONSULTOR_PASSWORD:?Falta KEYCLOAK_USUARIO_CONSULTOR_PASSWORD en .env}
+    ports:
+      - "8080:8080"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      - ./keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro
+    networks:
+      - frontal
+    healthcheck:
+      # La imagen no trae curl: se consulta /health/ready del puerto de gestión con bash.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"status\": \"UP\"' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
   # ---------------------------------------------------------------------------
   # Servicios pendientes. Son un punto de partida: quien haga la tarea ajusta
   # imagen, variables y etiquetas, y registra en la sección 7 de CONTEXTO.md lo
   # que se aparte del diseño.
   # ---------------------------------------------------------------------------
-
-  # --- T04: Keycloak ---------------------------------------------------------
-  # keycloak:
-  #   image: quay.io/keycloak/keycloak:26.0
-  #   restart: unless-stopped
-  #   command: start-dev --import-realm
-  #   environment:
-  #     KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
-  #     KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Falta KEYCLOAK_ADMIN_PASSWORD en .env}
-  #   ports:
-  #     - "8080:8080"
-  #   volumes:
-  #     - keycloak_data:/opt/keycloak/data
-  #     - ./keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro
-  #   networks:
-  #     - frontal
 
   # --- T06, T07, T09, T10: microservicios (misma forma, cambia nombre, prefijo y usuario de BD)
   # ms-crear:

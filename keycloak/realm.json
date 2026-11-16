@@ -1,0 +1,90 @@
+{
+  "realm": "gestion-personas",
+  "displayName": "Gestión de Datos Personales",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "bruteForceProtected": true,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["es"],
+  "defaultLocale": "es",
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      {
+        "name": "administrador",
+        "description": "Puede usar todas las opciones del menú: crear, modificar, consultar y borrar personas, consulta en lenguaje natural y log"
+      },
+      {
+        "name": "consultor",
+        "description": "Solo puede consultar personas, usar la consulta en lenguaje natural y consultar el log"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "frontend",
+      "name": "Aplicación web",
+      "description": "Frontend React. Cliente público con flujo de código de autorización y PKCE (S256)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "rootUrl": "http://localhost",
+      "baseUrl": "/",
+      "redirectUris": ["http://localhost/*", "http://localhost:5173/*"],
+      "webOrigins": ["http://localhost", "http://localhost:5173"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost/*##http://localhost:5173/*"
+      }
+    },
+    {
+      "clientId": "pruebas",
+      "name": "Pruebas de la API",
+      "description": "Solo para Postman y scripts de prueba: obtiene tokens de los usuarios de prueba con usuario y contraseña. El frontend no lo usa",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false
+    }
+  ],
+  "users": [
+    {
+      "username": "admin.prueba",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "admin.prueba@example.com",
+      "firstName": "Admin",
+      "lastName": "De Prueba",
+      "realmRoles": ["administrador"],
+      "credentials": [
+        { "type": "password", "value": "${KEYCLOAK_USUARIO_ADMIN_PASSWORD}", "temporary": false }
+      ]
+    },
+    {
+      "username": "consultor.prueba",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "consultor.prueba@example.com",
+      "firstName": "Consultor",
+      "lastName": "De Prueba",
+      "realmRoles": ["consultor"],
+      "credentials": [
+        { "type": "password", "value": "${KEYCLOAK_USUARIO_CONSULTOR_PASSWORD}", "temporary": false }
+      ]
+    }
+  ]
+}
