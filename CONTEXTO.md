@@ -3,7 +3,7 @@
 > Este es el documento de contexto del repositorio. Cualquier integrante del equipo, o la IA que use, debe leerlo completo antes de trabajar.
 > Uso: haz `git pull`, abre tu IA en la carpeta del repositorio y pídele «Lee CONTEXTO.md y dime en qué estado está el proyecto y qué me toca hacer».
 
-**Última actualización:** 2026-11-16, por Carlos Ruidiaz (tarea T03)
+**Última actualización:** 2026-11-16, por Carlos Ruidiaz (tarea T04)
 **Fase actual:** Fase 1 · Cimientos (base de datos, Keycloak y librería común)
 
 ---
@@ -47,29 +47,33 @@ Reglas de diseño que no se deben romper sin registrar una decisión en la secci
 
 > Esta sección se mantiene al día con lo que realmente funciona. Si cambias cómo se arranca algo, actualízala en tu misma rama.
 
-Requisitos: Docker Desktop (con WSL2 en Windows) y Git. El puerto 80 debe estar libre.
+Requisitos: Docker Desktop (con WSL2 en Windows) y Git. Los puertos 80 y 8080 deben estar libres.
 
 ```bash
-cp .env.example .env        # completar llaves y contraseñas (hoy son obligatorias POSTGRES_PASSWORD y las seis DB_PASSWORD_*)
+cp .env.example .env        # completar llaves y contraseñas (hoy son obligatorias POSTGRES_PASSWORD, las seis DB_PASSWORD_* y las tres de Keycloak)
 docker compose --profile consultar up -d --build
 ```
 
-Qué arranca hoy (tarea T02): solo `gateway` (Traefik) y `postgres` (PostgreSQL 16 con pgvector). Los demás servicios están comentados al final de `docker-compose.yml` y cada tarea descomenta el suyo.
+Qué arranca hoy: `gateway` (Traefik), `postgres` (PostgreSQL 16 con pgvector) y `keycloak`. Los demás servicios están comentados al final de `docker-compose.yml` y cada tarea descomenta el suyo.
 
 Cómo comprobar que funciona:
 
 ```bash
-docker compose ps                      # gateway y postgres en estado healthy
+docker compose ps                      # gateway, postgres y keycloak en estado healthy (keycloak tarda cerca de un minuto)
 curl -i http://localhost/              # 404 de Traefik: el gateway responde y aún no hay rutas
 docker compose exec -T postgres sh < database/verificar.sh   # esquema, restricciones y permisos: termina con TODO BIEN
+bash keycloak/verificar.sh             # realm, roles, usuarios de prueba y login con PKCE: termina con TODO BIEN (en Windows, con Git Bash)
 ```
 
 Si ya habías arrancado el proyecto antes de T03, tu base de datos local no tiene las tablas: completa las `DB_PASSWORD_*` en tu `.env` y recrea el volumen con `docker compose down -v` antes de volver a arrancar.
+
+Usuarios de prueba de la aplicación: `admin.prueba` (rol `administrador`) y `consultor.prueba` (rol `consultor`). Sus contraseñas son las que pongas en `KEYCLOAK_USUARIO_ADMIN_PASSWORD` y `KEYCLOAK_USUARIO_CONSULTOR_PASSWORD`. La consola de Keycloak está en <http://localhost:8080> y se entra con `KEYCLOAK_ADMIN` y `KEYCLOAK_ADMIN_PASSWORD`.
 
 Notas:
 
 - PostgreSQL no publica puertos. Para entrar a la base de datos se usa `docker compose exec postgres psql ...`.
 - `database/init.sql` e `init-usuarios.sh` solo se ejecutan cuando el volumen `pgdata` está vacío. Si cambian, o si cambia una `DB_PASSWORD_*`, hay que recrear el volumen con `docker compose down -v` (borra los datos locales) y volver a arrancar.
+- Keycloak importa `keycloak/realm.json` solo si el realm no existe. Si cambia el archivo o una contraseña de los usuarios de prueba, hay que borrar el volumen `keycloak_data` (pasos en `keycloak/README.md`).
 - Para apagar todo: `docker compose --profile consultar down`.
 
 Configuración inicial de n8n (una sola vez): pendiente de documentar en la tarea T20.
@@ -89,8 +93,9 @@ Configuración inicial de n8n (una sola vez): pendiente de documentar en la tare
 - T01: estructura del monorepo con un `README.md` en cada carpeta que aún no tiene código, documentación copiada en `docs/`, `README.md`, `CONTEXTO.md`, `AGENTS.md`, `CLAUDE.md`, `.gitignore`, `.gitattributes` y `.env.example` con todas las variables previstas.
 - T02: `docker-compose.yml` base con las redes `frontal` y `datos`, los volúmenes `pgdata`, `n8n_data` y `keycloak_data`, Traefik y PostgreSQL 16 con pgvector. Probado el 2026-11-16: los dos contenedores quedan `healthy`, Traefik responde en el puerto 80, la extensión `vector` funciona y PostgreSQL solo está en la red `datos`, sin puertos publicados. Keycloak, n8n, el frontend y los microservicios quedan como bloques comentados (incluido el perfil `consultar`).
 - T03: `database/init.sql` con las tablas `persona`, `log_transaccion` y `persona_embedding`, la vista `vista_personas`, los índices del log, los seis usuarios de base de datos y sus permisos. `database/init-usuarios.sh` les asigna las contraseñas de `.env`. `database/verificar.sh` comprueba todo; probado el 2026-11-16 sin fallos. Lo que debe saber quien programe contra la base está en `database/README.md`.
+- T04: Keycloak 26.8 en Compose con importación automática de `keycloak/realm.json`: realm `gestion-personas`, roles `administrador` y `consultor`, cliente `frontend` (código de autorización con PKCE obligatorio), cliente `pruebas` (tokens para Postman y scripts) y usuarios `admin.prueba` y `consultor.prueba` con contraseñas tomadas de `.env`. Tokens de 5 minutos. `keycloak/verificar.sh` comprueba todo, incluido el login completo con PKCE; probado el 2026-11-16 sin fallos. Lo que deben saber T05 y T11 está en `keycloak/README.md`.
 
-**Todavía no existe:** Keycloak (T04), ningún microservicio, frontend ni flujo de n8n. La base de datos está vacía: los datos de prueba son la tarea T17.
+**Todavía no existe:** ningún microservicio, frontend ni flujo de n8n. La base de datos está vacía: los datos de prueba son la tarea T17.
 
 **En curso:** ver la columna Estado del tablero.
 
@@ -112,7 +117,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 | T01 | Estructura del monorepo, README, CONTEXTO.md, AGENTS.md, CLAUDE.md, .gitignore, .env.example | raíz, docs/ | | Hecha | Carlos Ruidiaz | main (commit inicial) |
 | T02 | docker-compose.yml base: redes frontal y datos, volúmenes, Traefik, PostgreSQL con pgvector, perfil `consultar` | raíz | T01 | Hecha | Carlos Ruidiaz | main (commit inicial) |
 | T03 | `database/init.sql`: tablas, vista_personas, índices, usuarios de BD y permisos | database/ | T02 | Hecha | Carlos Ruidiaz | feat/T03-base-de-datos |
-| T04 | Keycloak: realm.json con cliente del frontend (PKCE), roles, usuarios de prueba e importación automática | keycloak/ | T02 | En curso | Carlos Ruidiaz | feat/T04-keycloak |
+| T04 | Keycloak: realm.json con cliente del frontend (PKCE), roles, usuarios de prueba e importación automática | keycloak/ | T02 | Hecha | Carlos Ruidiaz | feat/T04-keycloak |
 | T05 | `libs/common`: entidad Persona, DTO y validaciones, guard JWT con roles, módulo de auditoría transaccional | libs/common/ | T03, T04 | Pendiente | | |
 | T06 | ms-crear | services/ms-crear/ | T05 | Pendiente | | |
 | T07 | ms-modificar (búsqueda previa + actualización) | services/ms-modificar/ | T05 | Pendiente | | |
@@ -154,6 +159,10 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 
 | Fecha | Decisión | Motivo | Quién |
 | --- | --- | --- | --- |
+| 2026-11-16 | El guard JWT (T05) lee las llaves públicas por la URL interna (`http://keycloak:8080`) pero valida el emisor público (`http://localhost:8080/realms/gestion-personas`). No exige audiencia: el token no trae `aud`. Roles en `realm_access.roles`, usuario en `preferred_username` | Keycloak tiene la URL pública fija (`KC_HOSTNAME`) para que el emisor sea el mismo desde el navegador y desde Docker. Comprobado en T04 | Carlos Ruidiaz |
+| 2026-11-16 | El realm tiene un segundo cliente, `pruebas`, que entrega tokens con usuario y contraseña. Es solo para Postman y scripts (T18, T19). El cliente `frontend` no lo permite y exige PKCE | El flujo con PKCE necesita un navegador; sin este cliente no se pueden automatizar las pruebas de la API. Es un agregado al diseño, no cambia el login de la aplicación | Carlos Ruidiaz |
+| 2026-11-16 | Las contraseñas de los usuarios de prueba de Keycloak salen de `.env` (`KEYCLOAK_USUARIO_*_PASSWORD`); `realm.json` solo tiene la referencia a la variable. Roles en minúscula: `administrador` y `consultor` | Ninguna contraseña en el repositorio | Carlos Ruidiaz |
+| 2026-11-16 | Keycloak corre en modo desarrollo (`start-dev`), con su base interna en el volumen `keycloak_data`, imagen `quay.io/keycloak/keycloak:26.8` | Es un despliegue local por HTTP. El modo producción exige HTTPS | Carlos Ruidiaz |
 | 2026-11-16 | Se quita la revisión obligatoria de los pull requests y el estado «En revisión». Quien termina una tarea la marca **Hecha** en su rama y hace el merge de su propio pull request | Evitar que las tareas queden bloqueadas esperando a otro integrante. La reserva de tareas en `main` se mantiene | Carlos Ruidiaz |
 | 2026-11-16 | Los servicios que insertan en el log no pueden usar `RETURNING` (no tienen SELECT sobre `log_transaccion`). El módulo de auditoría de T05 debe insertar con una consulta parametrizada propia, porque `save()` e `insert()` de TypeORM agregan `RETURNING id` | Es consecuencia de los permisos de la sección 6.3 del diseño, que se respetan tal cual. Comprobado en T03 | Carlos Ruidiaz |
 | 2026-11-16 | El esquema lo define `database/init.sql`. TypeORM va con `synchronize: false` | Los usuarios de los servicios no pueden crear ni alterar tablas | Carlos Ruidiaz |
