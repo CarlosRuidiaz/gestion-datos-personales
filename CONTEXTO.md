@@ -183,7 +183,7 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 
 ## 8. Protocolo de trabajo en equipo
 
-1. **Antes de empezar:** `git pull` en `main` y leer este documento.
+1. **Antes de empezar:** `git pull` en `main` y leer este documento. Después del pull, compara tu `.env` con `.env.example` y agrega las variables nuevas (las tareas van sumando variables obligatorias, y sin ellas `docker compose` no arranca). Si cambió `package-lock.json`, ejecuta `npm install` en la raíz.
 2. **Reservar una tarea:** en `main`, cambia el estado de la tarea a **En curso** y pon tu nombre y el nombre de la rama. Haz un commit que solo toque este archivo (`docs: reservar T07`) y súbelo de inmediato. Si el push falla porque alguien subió antes, haz pull: si la tarea ya tiene responsable, elige otra.
 3. **Trabajar:** crea la rama de la tarea y trabaja solo en su carpeta principal.
 4. **Cambios que afectan a otros:** si modificas `libs/common`, el esquema de base de datos, `docker-compose.yml` o un contrato de API, regístralo en la sección 7 y avisa al grupo antes de hacer merge.
@@ -197,9 +197,10 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 Si eres un asistente de IA trabajando en este repositorio:
 
 1. Lee este documento completo antes de proponer o escribir código. Después lee las secciones del diseño (`docs/diseno/documento_diseno.md`) que tienen que ver con la tarea.
-2. Pregunta al usuario su nombre y qué tarea va a trabajar, o recomiéndale la siguiente según la sección 5. No trabajes en tareas que están **En curso** con otro responsable.
-3. Respeta el diseño. Si algo del diseño no se puede implementar tal cual, propón la alternativa, explica el motivo y, si el usuario la acepta, regístrala en la sección 7.
-4. Trabaja solo en la carpeta de la tarea, salvo que el usuario indique otra cosa.
-5. Si vas a retomar una tarea en curso, lee primero su nota de traspaso en la sección 6.1.
-6. Antes de terminar cada sesión, aunque la tarea no esté terminada, actualiza la nota de traspaso de la tarea (qué quedó hecho, qué falta y qué debe saber quien la retome) y el resto del documento según la sección 8. Dile al usuario qué cambió.
-7. Nunca escribas llaves, contraseñas ni datos personales reales en el repositorio.
+2. Al iniciar la sesión, después del `git pull`, compara los nombres de las variables de `.env` con los de `.env.example` y dile al usuario cuáles le faltan o están vacías. Nunca muestres ni copies los valores de `.env`. Si falta el archivo, indícale que copie `.env.example`.
+3. Pregunta al usuario su nombre y qué tarea va a trabajar, o recomiéndale la siguiente según la sección 5. No trabajes en tareas que están **En curso** con otro responsable.
+4. Respeta el diseño. Si algo del diseño no se puede implementar tal cual, propón la alternativa, explica el motivo y, si el usuario la acepta, regístrala en la sección 7.
+5. Trabaja solo en la carpeta de la tarea, salvo que el usuario indique otra cosa.
+6. Si vas a retomar una tarea en curso, lee primero su nota de traspaso en la sección 6.1.
+7. Antes de terminar cada sesión, aunque la tarea no esté terminada, actualiza la nota de traspaso de la tarea (qué quedó hecho, qué falta y qué debe saber quien la retome) y el resto del documento según la sección 8. Dile al usuario qué cambió.
+8. Nunca escribas llaves, contraseñas ni datos personales reales en el repositorio.
