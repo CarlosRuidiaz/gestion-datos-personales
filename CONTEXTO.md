@@ -118,7 +118,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 | T02 | docker-compose.yml base: redes frontal y datos, volúmenes, Traefik, PostgreSQL con pgvector, perfil `consultar` | raíz | T01 | Hecha | Carlos Ruidiaz | main (commit inicial) |
 | T03 | `database/init.sql`: tablas, vista_personas, índices, usuarios de BD y permisos | database/ | T02 | Hecha | Carlos Ruidiaz | feat/T03-base-de-datos |
 | T04 | Keycloak: realm.json con cliente del frontend (PKCE), roles, usuarios de prueba e importación automática | keycloak/ | T02 | Hecha | Carlos Ruidiaz | feat/T04-keycloak |
-| T05 | `libs/common`: entidad Persona, DTO y validaciones, guard JWT con roles, módulo de auditoría transaccional | libs/common/ | T03, T04 | Pendiente | | |
+| T05 | `libs/common`: entidad Persona, DTO y validaciones, guard JWT con roles, módulo de auditoría transaccional | libs/common/ | T03, T04 | En curso | Carlos Ruidiaz | feat/T05-libs-common |
 | T06 | ms-crear | services/ms-crear/ | T05 | Pendiente | | |
 | T07 | ms-modificar (búsqueda previa + actualización) | services/ms-modificar/ | T05 | Pendiente | | |
 | T08 | ms-consultar con endpoint health y perfil de Compose | services/ms-consultar/ | T05 | Pendiente | | |
