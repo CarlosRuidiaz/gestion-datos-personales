@@ -1,0 +1,159 @@
+# Gestión de Datos Personales: orquestación de contenedores (sección 10 del diseño).
+#
+# Estado: base (tarea T02). Funcionan el gateway (Traefik) y la base de datos (PostgreSQL 16
+# con pgvector). Los demás servicios están al final, comentados: cada tarea del tablero de
+# CONTEXTO.md descomenta y completa el suyo.
+#
+# Arranque:  cp .env.example .env   (completar contraseñas)
+#            docker compose --profile consultar up -d --build
+
+name: gestion-datos-personales
+
+networks:
+  # Conecta el gateway con el frontend, Keycloak, n8n y los microservicios.
+  frontal:
+    name: gdp_frontal
+  # Conecta PostgreSQL solo con los microservicios y n8n. El gateway y el frontend no entran aquí.
+  datos:
+    name: gdp_datos
+
+volumes:
+  pgdata:
+  n8n_data:
+  keycloak_data:
+
+services:
+  gateway:
+    image: traefik:v3.6
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      # Solo se publican los contenedores que tengan la etiqueta traefik.enable=true.
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=gdp_frontal
+      - --entrypoints.web.address=:80
+      - --ping=true
+      - --accesslog=true
+    ports:
+      - "80:80"
+    volumes:
+      # Traefik lee los contenedores activos para crear y quitar rutas en tiempo real (DD-04).
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - frontal
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gestion_personas}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD. Copia .env.example como .env y complétalo}
+      TZ: ${TZ:-America/Bogota}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Se ejecuta solo la primera vez, cuando el volumen pgdata está vacío.
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    # Sin "ports": la base de datos no se publica fuera de la red interna (sección 9 del diseño).
+    networks:
+      - datos
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Servicios pendientes. Son un punto de partida: quien haga la tarea ajusta
+  # imagen, variables y etiquetas, y registra en la sección 7 de CONTEXTO.md lo
+  # que se aparte del diseño.
+  # ---------------------------------------------------------------------------
+
+  # --- T04: Keycloak ---------------------------------------------------------
+  # keycloak:
+  #   image: quay.io/keycloak/keycloak:26.0
+  #   restart: unless-stopped
+  #   command: start-dev --import-realm
+  #   environment:
+  #     KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+  #     KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Falta KEYCLOAK_ADMIN_PASSWORD en .env}
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - keycloak_data:/opt/keycloak/data
+  #     - ./keycloak/realm.json:/opt/keycloak/data/import/realm.json:ro
+  #   networks:
+  #     - frontal
+
+  # --- T06, T07, T09, T10: microservicios (misma forma, cambia nombre, prefijo y usuario de BD)
+  # ms-crear:
+  #   build:
+  #     context: .                      # contexto en la raíz para poder copiar libs/common
+  #     dockerfile: services/ms-crear/Dockerfile
+  #   restart: unless-stopped
+  #   environment:
+  #     DB_HOST: ${DB_HOST:-postgres}
+  #     DB_PORT: ${DB_PORT:-5432}
+  #     DB_NAME: ${POSTGRES_DB:-gestion_personas}
+  #     DB_USER: usr_crear
+  #     DB_PASSWORD: ${DB_PASSWORD_CREAR}
+  #     KEYCLOAK_PUBLIC_URL: ${KEYCLOAK_PUBLIC_URL}
+  #     KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL}
+  #     KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+  #     N8N_WEBHOOK_INDEXACION_URL: ${N8N_WEBHOOK_INDEXACION_URL}
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - frontal
+  #     - datos
+  #   labels:
+  #     - traefik.enable=true
+  #     - traefik.http.routers.ms-crear.rule=PathPrefix(`/api/crear`)
+  #     - traefik.http.routers.ms-crear.entrypoints=web
+  #     - traefik.http.services.ms-crear.loadbalancer.server.port=3000
+
+  # --- T08: ms-consultar (perfil propio: se habilita y deshabilita según demanda, DD-04)
+  # ms-consultar:
+  #   profiles: ["consultar"]
+  #   build:
+  #     context: .
+  #     dockerfile: services/ms-consultar/Dockerfile
+  #   ...igual que ms-crear, con usr_consultar, DB_PASSWORD_CONSULTAR y PathPrefix(`/api/consultar`).
+  #   No fijar container_name, para poder escalar con --scale ms-consultar=3.
+
+  # --- T11: frontend (Nginx) ---------------------------------------------------
+  # frontend:
+  #   build: ./frontend
+  #   restart: unless-stopped
+  #   networks:
+  #     - frontal
+  #   labels:
+  #     - traefik.enable=true
+  #     - traefik.http.routers.frontend.rule=PathPrefix(`/`)
+  #     - traefik.http.routers.frontend.entrypoints=web
+  #     - traefik.http.services.frontend.loadbalancer.server.port=80
+
+  # --- T14: n8n ----------------------------------------------------------------
+  # n8n:
+  #   image: n8nio/n8n
+  #   restart: unless-stopped
+  #   environment:
+  #     N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Falta N8N_ENCRYPTION_KEY en .env}
+  #     GENERIC_TIMEZONE: ${TZ:-America/Bogota}
+  #     TZ: ${TZ:-America/Bogota}
+  #   ports:
+  #     - "5678:5678"
+  #   volumes:
+  #     - n8n_data:/home/node/.n8n
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - frontal
+  #     - datos
