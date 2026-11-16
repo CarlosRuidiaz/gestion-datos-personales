@@ -55,10 +55,18 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD. Copia .env.example como .env y complétalo}
       TZ: ${TZ:-America/Bogota}
+      # Contraseñas de los usuarios por servicio: las asigna database/init-usuarios.sh.
+      DB_PASSWORD_CREAR: ${DB_PASSWORD_CREAR:?Falta DB_PASSWORD_CREAR en .env}
+      DB_PASSWORD_MODIFICAR: ${DB_PASSWORD_MODIFICAR:?Falta DB_PASSWORD_MODIFICAR en .env}
+      DB_PASSWORD_CONSULTAR: ${DB_PASSWORD_CONSULTAR:?Falta DB_PASSWORD_CONSULTAR en .env}
+      DB_PASSWORD_BORRAR: ${DB_PASSWORD_BORRAR:?Falta DB_PASSWORD_BORRAR en .env}
+      DB_PASSWORD_LOG: ${DB_PASSWORD_LOG:?Falta DB_PASSWORD_LOG en .env}
+      DB_PASSWORD_N8N: ${DB_PASSWORD_N8N:?Falta DB_PASSWORD_N8N en .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # Se ejecuta solo la primera vez, cuando el volumen pgdata está vacío.
+      # Se ejecutan en orden y solo la primera vez, cuando el volumen pgdata está vacío.
       - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./database/init-usuarios.sh:/docker-entrypoint-initdb.d/02-init-usuarios.sh:ro
     # Sin "ports": la base de datos no se publica fuera de la red interna (sección 9 del diseño).
     networks:
       - datos
