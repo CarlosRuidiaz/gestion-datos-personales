@@ -3,7 +3,7 @@
 > Este es el documento de contexto del repositorio. Cualquier integrante del equipo, o la IA que use, debe leerlo completo antes de trabajar.
 > Uso: haz `git pull`, abre tu IA en la carpeta del repositorio y pídele «Lee CONTEXTO.md y dime en qué estado está el proyecto y qué me toca hacer».
 
-**Última actualización:** 2026-11-16, por Carlos Ruidiaz (tareas T01 y T02)
+**Última actualización:** 2026-11-16, por Carlos Ruidiaz (tarea T03)
 **Fase actual:** Fase 1 · Cimientos (base de datos, Keycloak y librería común)
 
 ---
@@ -50,7 +50,7 @@ Reglas de diseño que no se deben romper sin registrar una decisión en la secci
 Requisitos: Docker Desktop (con WSL2 en Windows) y Git. El puerto 80 debe estar libre.
 
 ```bash
-cp .env.example .env        # completar llaves y contraseñas (hoy solo es obligatoria POSTGRES_PASSWORD)
+cp .env.example .env        # completar llaves y contraseñas (hoy son obligatorias POSTGRES_PASSWORD y las seis DB_PASSWORD_*)
 docker compose --profile consultar up -d --build
 ```
 
@@ -61,13 +61,15 @@ Cómo comprobar que funciona:
 ```bash
 docker compose ps                      # gateway y postgres en estado healthy
 curl -i http://localhost/              # 404 de Traefik: el gateway responde y aún no hay rutas
-docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\dx"'   # aparece la extensión vector
+docker compose exec -T postgres sh < database/verificar.sh   # esquema, restricciones y permisos: termina con TODO BIEN
 ```
+
+Si ya habías arrancado el proyecto antes de T03, tu base de datos local no tiene las tablas: completa las `DB_PASSWORD_*` en tu `.env` y recrea el volumen con `docker compose down -v` antes de volver a arrancar.
 
 Notas:
 
 - PostgreSQL no publica puertos. Para entrar a la base de datos se usa `docker compose exec postgres psql ...`.
-- `database/init.sql` solo se ejecuta cuando el volumen `pgdata` está vacío. Si cambia, hay que recrear el volumen con `docker compose down -v` (borra los datos locales) y volver a arrancar.
+- `database/init.sql` e `init-usuarios.sh` solo se ejecutan cuando el volumen `pgdata` está vacío. Si cambian, o si cambia una `DB_PASSWORD_*`, hay que recrear el volumen con `docker compose down -v` (borra los datos locales) y volver a arrancar.
 - Para apagar todo: `docker compose --profile consultar down`.
 
 Configuración inicial de n8n (una sola vez): pendiente de documentar en la tarea T20.
@@ -76,7 +78,7 @@ Configuración inicial de n8n (una sola vez): pendiente de documentar en la tare
 
 - **Ramas:** una rama por tarea, con el ID de la tarea: `feat/T06-ms-crear`, `fix/T12-validacion-fecha`. Nunca se trabaja directo en `main`, salvo para reservar tareas (sección 6).
 - **Commits:** en español, con prefijo: `feat:`, `fix:`, `docs:`, `chore:`, `test:`. Ejemplo: `feat(ms-crear): validar documento duplicado`.
-- **Pull requests:** toda rama entra a `main` por pull request revisado por al menos otro integrante.
+- **Pull requests:** toda rama entra a `main` por pull request. No hace falta esperar la revisión de otro integrante: quien hace la tarea comprueba que funciona, abre el pull request y hace el merge. Pedir una revisión es opcional, y conviene cuando el cambio afecta a otros (sección 8, punto 4).
 - **Nombres:** los nombres del dominio siguen el diseño, en español (`persona`, `numeroDocumento`, `log_transaccion`). En TypeScript se usa camelCase y en la base de datos snake_case.
 - **Secretos:** nunca se suben llaves ni contraseñas. Solo `.env.example` con los nombres de las variables.
 - **Zonas de trabajo:** cada tarea indica su carpeta. Tocar carpetas de otra tarea en curso requiere avisar al responsable.
@@ -86,8 +88,9 @@ Configuración inicial de n8n (una sola vez): pendiente de documentar en la tare
 **Hecho:**
 - T01: estructura del monorepo con un `README.md` en cada carpeta que aún no tiene código, documentación copiada en `docs/`, `README.md`, `CONTEXTO.md`, `AGENTS.md`, `CLAUDE.md`, `.gitignore`, `.gitattributes` y `.env.example` con todas las variables previstas.
 - T02: `docker-compose.yml` base con las redes `frontal` y `datos`, los volúmenes `pgdata`, `n8n_data` y `keycloak_data`, Traefik y PostgreSQL 16 con pgvector. Probado el 2026-11-16: los dos contenedores quedan `healthy`, Traefik responde en el puerto 80, la extensión `vector` funciona y PostgreSQL solo está en la red `datos`, sin puertos publicados. Keycloak, n8n, el frontend y los microservicios quedan como bloques comentados (incluido el perfil `consultar`).
+- T03: `database/init.sql` con las tablas `persona`, `log_transaccion` y `persona_embedding`, la vista `vista_personas`, los índices del log, los seis usuarios de base de datos y sus permisos. `database/init-usuarios.sh` les asigna las contraseñas de `.env`. `database/verificar.sh` comprueba todo; probado el 2026-11-16 sin fallos. Lo que debe saber quien programe contra la base está en `database/README.md`.
 
-**Todavía no existe:** tablas ni usuarios de base de datos (T03), Keycloak (T04), ningún microservicio, frontend ni flujo de n8n.
+**Todavía no existe:** Keycloak (T04), ningún microservicio, frontend ni flujo de n8n. La base de datos está vacía: los datos de prueba son la tarea T17.
 
 **En curso:** ver la columna Estado del tablero.
 
@@ -102,13 +105,13 @@ Fases: Fase 0, base del repositorio (T01 y T02). Fase 1, cimientos (T03 a T05). 
 
 ## 6. Tablero de tareas
 
-Estados posibles: **Pendiente**, **En curso**, **En revisión**, **Hecha**.
+Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 
 | ID | Tarea | Carpeta principal | Depende de | Estado | Responsable | Rama |
 | --- | --- | --- | --- | --- | --- | --- |
 | T01 | Estructura del monorepo, README, CONTEXTO.md, AGENTS.md, CLAUDE.md, .gitignore, .env.example | raíz, docs/ | | Hecha | Carlos Ruidiaz | main (commit inicial) |
 | T02 | docker-compose.yml base: redes frontal y datos, volúmenes, Traefik, PostgreSQL con pgvector, perfil `consultar` | raíz | T01 | Hecha | Carlos Ruidiaz | main (commit inicial) |
-| T03 | `database/init.sql`: tablas, vista_personas, índices, usuarios de BD y permisos | database/ | T02 | En curso | Carlos Ruidiaz | feat/T03-base-de-datos |
+| T03 | `database/init.sql`: tablas, vista_personas, índices, usuarios de BD y permisos | database/ | T02 | Hecha | Carlos Ruidiaz | feat/T03-base-de-datos |
 | T04 | Keycloak: realm.json con cliente del frontend (PKCE), roles, usuarios de prueba e importación automática | keycloak/ | T02 | Pendiente | | |
 | T05 | `libs/common`: entidad Persona, DTO y validaciones, guard JWT con roles, módulo de auditoría transaccional | libs/common/ | T03, T04 | Pendiente | | |
 | T06 | ms-crear | services/ms-crear/ | T05 | Pendiente | | |
@@ -132,7 +135,7 @@ Después de T05, el trabajo se puede repartir en cuatro frentes paralelos con po
 
 ### 6.1 Notas de traspaso
 
-Una nota por cada tarea **En curso** o **En revisión**, para que cualquiera (incluida otra persona o su IA) pueda retomarla sin preguntar. Se actualiza al cerrar cada sesión de trabajo, aunque la tarea no esté terminada, y se borra cuando la tarea pasa a **Hecha**.
+Una nota por cada tarea **En curso**, para que cualquiera (incluida otra persona o su IA) pueda retomarla sin preguntar. Se actualiza al cerrar cada sesión de trabajo, aunque la tarea no esté terminada, y se borra cuando la tarea pasa a **Hecha**.
 
 Formato de cada nota:
 
@@ -143,7 +146,7 @@ Formato de cada nota:
 - Para retomar: archivos clave, comandos, decisiones a medias o problemas encontrados.
 ```
 
-(No hay tareas en curso todavía.)
+(No hay tareas en curso.)
 
 ## 7. Decisiones tomadas durante la implementación
 
@@ -151,6 +154,12 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 
 | Fecha | Decisión | Motivo | Quién |
 | --- | --- | --- | --- |
+| 2026-11-16 | Se quita la revisión obligatoria de los pull requests y el estado «En revisión». Quien termina una tarea la marca **Hecha** en su rama y hace el merge de su propio pull request | Evitar que las tareas queden bloqueadas esperando a otro integrante. La reserva de tareas en `main` se mantiene | Carlos Ruidiaz |
+| 2026-11-16 | Los servicios que insertan en el log no pueden usar `RETURNING` (no tienen SELECT sobre `log_transaccion`). El módulo de auditoría de T05 debe insertar con una consulta parametrizada propia, porque `save()` e `insert()` de TypeORM agregan `RETURNING id` | Es consecuencia de los permisos de la sección 6.3 del diseño, que se respetan tal cual. Comprobado en T03 | Carlos Ruidiaz |
+| 2026-11-16 | El esquema lo define `database/init.sql`. TypeORM va con `synchronize: false` | Los usuarios de los servicios no pueden crear ni alterar tablas | Carlos Ruidiaz |
+| 2026-11-16 | `persona_embedding` usa las columnas del nodo PGVector de n8n (`id`, `text`, `metadata`, `embedding`), con el documento en `metadata`, y no fija la dimensión del vector. Su dueño es `usr_n8n` | El diseño dice que la administra n8n. La dimensión depende del modelo de embeddings que elija T14 | Carlos Ruidiaz |
+| 2026-11-16 | `persona` tiene restricciones CHECK que repiten las validaciones de la sección 3.3 (listas, sin números, formato de correo y celular, fecha no futura, foto JPG o PNG de hasta 2 MB). `foto_tipo` guarda el tipo MIME | Última barrera si alguien se salta el frontend y los DTO. No reemplaza las validaciones de los servicios, que son las que dan los mensajes | Carlos Ruidiaz |
+| 2026-11-16 | Las contraseñas de los usuarios de BD las asigna `database/init-usuarios.sh` desde `.env`; `init.sql` crea los usuarios sin contraseña. El contenedor `postgres` exige las seis `DB_PASSWORD_*` | Concreta la decisión de abajo: ninguna contraseña en el repositorio | Carlos Ruidiaz |
 | 2026-11-16 | Las contraseñas de los usuarios de base de datos por servicio se definen en `.env` (`DB_PASSWORD_CREAR`, etc.). T03 debe crear los usuarios leyendo esas variables, no con contraseñas escritas en `init.sql` | El diseño pide que ninguna contraseña quede en el repositorio (sección 9) | Carlos Ruidiaz |
 | 2026-11-16 | `database/init.sql` existe desde T02 y solo activa la extensión `vector`. T03 lo completa. Si cambia, hay que recrear el volumen `pgdata` | Permite montar el archivo desde ya y comprobar pgvector | Carlos Ruidiaz |
 | 2026-11-16 | Las redes tienen nombre fijo (`gdp_frontal`, `gdp_datos`) y los microservicios se construyen con el contexto en la raíz del repositorio | Traefik necesita saber por qué red llegar a los contenedores, y cada Dockerfile debe poder copiar `libs/common` | Carlos Ruidiaz |
@@ -163,7 +172,7 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 3. **Trabajar:** crea la rama de la tarea y trabaja solo en su carpeta principal.
 4. **Cambios que afectan a otros:** si modificas `libs/common`, el esquema de base de datos, `docker-compose.yml` o un contrato de API, regístralo en la sección 7 y avisa al grupo antes de hacer merge.
 5. **Pausar:** si dejas la tarea a medias, sube tu rama y actualiza su nota de traspaso (sección 6.1) en `main` con un commit que solo toque este archivo, para que el resto vea dónde quedó.
-6. **Terminar:** en tu misma rama, actualiza este documento: estado **En revisión**, lo que quedó hecho en la sección 5, cómo ejecutarlo en la sección 3 si cambió, y las decisiones en la sección 7. Abre el pull request. Quien hace el merge pasa el estado a **Hecha** y borra la nota de traspaso.
+6. **Terminar:** en tu misma rama, actualiza este documento: estado **Hecha**, lo que quedó hecho en la sección 5, cómo ejecutarlo en la sección 3 si cambió, las decisiones en la sección 7, y borra la nota de traspaso de la tarea. Comprueba que lo que hiciste funciona, abre el pull request y haz tú mismo el merge. Si el pull request tiene conflictos, intégrale `main` a tu rama y resuélvelos antes.
 7. **Edita solo tus filas y tus notas.** Cada quien modifica únicamente las filas de sus propias tareas. Así casi nunca hay conflictos en este archivo.
 8. **Al cerrar una sesión de trabajo**, actualiza la fecha de «Última actualización» y la fase actual si cambió.
 
