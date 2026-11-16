@@ -1,0 +1,17 @@
+{
+  "name": "gestion-datos-personales",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Proyecto final de Diseño de Software II: Gestión de Datos Personales",
+  "workspaces": [
+    "libs/*",
+    "services/*"
+  ],
+  "scripts": {
+    "build:common": "npm run build -w @gdp/common",
+    "test:common": "npm test -w @gdp/common"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,13 @@
+# Lo que no debe entrar a las imágenes de los microservicios.
+.git
+.env
+.env.*
+**/node_modules
+**/dist
+**/coverage
+docs
+frontend
+n8n
+keycloak
+database
+*.md
