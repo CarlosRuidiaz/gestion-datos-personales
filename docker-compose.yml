@@ -172,13 +172,46 @@ services:
   #     el Dockerfile, el usuario de BD (usr_modificar...), su contraseña y el prefijo de ruta.
 
   # --- T08: ms-consultar (perfil propio: se habilita y deshabilita según demanda, DD-04)
-  # ms-consultar:
-  #   profiles: ["consultar"]
-  #   build:
-  #     context: .
-  #     dockerfile: services/ms-consultar/Dockerfile
-  #   ...igual que ms-crear, con usr_consultar, DB_PASSWORD_CONSULTAR y PathPrefix(`/api/consultar`).
-  #   No fijar container_name, para poder escalar con --scale ms-consultar=3.
+  # Arranca solo con --profile consultar. Sin container_name, para poder escalar:
+  #   docker compose --profile consultar up -d --build      # arrancar todo
+  #   docker compose stop ms-consultar                       # deshabilitar Consultar
+  #   docker compose up -d ms-consultar                      # habilitar Consultar
+  #   docker compose up -d --scale ms-consultar=3 ms-consultar  # tres réplicas
+  ms-consultar:
+    profiles: ["consultar"]
+    build:
+      context: .
+      dockerfile: services/ms-consultar/Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-gestion_personas}
+      DB_USER: usr_consultar
+      DB_PASSWORD: ${DB_PASSWORD_CONSULTAR:?Falta DB_PASSWORD_CONSULTAR en .env}
+      KEYCLOAK_PUBLIC_URL: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}
+      KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-gestion-personas}
+      TZ: ${TZ:-America/Bogota}
+    # Traefik solo envía peticiones a las réplicas que ya pasaron este chequeo.
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/consultar/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 20s
+      start_interval: 1s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - frontal
+      - datos
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ms-consultar.rule=PathPrefix(`/api/consultar`)
+      - traefik.http.routers.ms-consultar.entrypoints=web
+      - traefik.http.services.ms-consultar.loadbalancer.server.port=3000
 
   # --- T11: frontend (Nginx) ---------------------------------------------------
   # frontend:

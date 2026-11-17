@@ -3,7 +3,7 @@
 > Este es el documento de contexto del repositorio. Cualquier integrante del equipo, o la IA que use, debe leerlo completo antes de trabajar.
 > Uso: haz `git pull`, abre tu IA en la carpeta del repositorio y pídele «Lee CONTEXTO.md y dime en qué estado está el proyecto y qué me toca hacer».
 
-**Última actualización:** 2026-11-16, por Carlos Ruidiaz (tarea T07)
+**Última actualización:** 2026-11-17, por Carlos Ruidiaz (tarea T08)
 **Fase actual:** Fase 2 · Frentes paralelos (microservicios, frontend, n8n y calidad)
 
 ---
@@ -54,7 +54,7 @@ cp .env.example .env        # completar llaves y contraseñas (hoy son obligator
 docker compose --profile consultar up -d --build
 ```
 
-Qué arranca hoy: `gateway` (Traefik), `postgres` (PostgreSQL 16 con pgvector), `keycloak`, `ms-crear` y `ms-modificar`. Los demás servicios están comentados al final de `docker-compose.yml` y cada tarea agrega el suyo.
+Qué arranca hoy: `gateway` (Traefik), `postgres` (PostgreSQL 16 con pgvector), `keycloak`, `ms-crear`, `ms-modificar` y, solo con `--profile consultar`, `ms-consultar`. Para apagar, encender o escalar Consultar: `docker compose stop ms-consultar`, `docker compose up -d ms-consultar` y `docker compose up -d --scale ms-consultar=3 ms-consultar`. Los demás servicios están comentados al final de `docker-compose.yml` y cada tarea agrega el suyo.
 
 Cómo comprobar que funciona:
 
@@ -67,6 +67,7 @@ npm install && npm run test:common     # pruebas unitarias de libs/common (no ne
 bash libs/common/pruebas-integracion.sh   # guard, validaciones y log transaccional contra PostgreSQL y Keycloak reales
 bash services/ms-crear/verificar.sh     # ms-crear de extremo a extremo, por el gateway y con tokens reales
 bash services/ms-modificar/verificar.sh # ms-modificar de extremo a extremo (no necesita ms-crear ni ms-consultar)
+bash services/ms-consultar/verificar.sh # ms-consultar de extremo a extremo, incluido apagarlo, encenderlo y escalarlo
 ```
 
 Si ya habías arrancado el proyecto antes de T03, tu base de datos local no tiene las tablas: completa las `DB_PASSWORD_*` en tu `.env` y recrea el volumen con `docker compose down -v` antes de volver a arrancar.
@@ -101,8 +102,9 @@ Configuración inicial de n8n (una sola vez): pendiente de documentar en la tare
 - T05: librería `@gdp/common` en `libs/common` (workspaces de npm): entidades `Persona` y `LogTransaccion`, DTO con las validaciones de la sección 3.3, guard JWT con roles, filtro que registra en el log las peticiones rechazadas y `AuditoriaService` para registrar las exitosas dentro de su transacción. `ComunModule.forRoot()` lo configura todo con un solo import. Probado el 2026-11-16: 51 pruebas unitarias y 13 de integración contra PostgreSQL y Keycloak reales, sin fallos; además se construyó en Docker un servicio de ejemplo que respondió a través de Traefik. **Quien vaya a hacer un microservicio (T06 a T10) debe leer `libs/common/README.md`**: tiene las tres reglas y la plantilla probada (package.json, main.ts, Dockerfile).
 - T06: `ms-crear` en Compose, con `POST /api/crear/personas` (formulario `multipart` con foto opcional, o JSON). Crea la persona y su log en una transacción; responde 201, 400 con la lista de campos, 403 y 409, y todos los rechazos quedan en el log. OpenAPI en `/api/crear/docs`. `services/ms-crear/verificar.sh` lo comprueba por el gateway (36 comprobaciones, sin fallos el 2026-11-16). `services/verificar-comun.sh` tiene las funciones que reutilizan los `verificar.sh` de los demás servicios. Falta el aviso a n8n, que es la tarea T16.
 - T07: `ms-modificar` en Compose, con `GET` y `PUT /api/modificar/personas/{documento}`. La búsqueda previa es propia (no depende de ms-consultar), devuelve la foto y queda en el log como `CONSULTAR` con su contexto. La modificación y su log van en una transacción; el log guarda el valor anterior y el nuevo de los campos que cambiaron. La foto se reemplaza, se conserva o se quita con `eliminarFoto`. `services/ms-modificar/verificar.sh` lo comprueba por el gateway (50 comprobaciones, sin fallos el 2026-11-16). Falta el aviso a n8n (T16).
+- T08: `ms-consultar` en el perfil `consultar` de Compose, con `GET /api/consultar/personas/{documento}` para los dos roles (ficha completa con foto, log `CONSULTAR` en la misma transacción) y `GET /api/consultar/health` sin token (200, o 503 si no llega a la base de datos; con el contenedor apagado, Traefik responde 404). Tiene healthcheck en Compose, así que Traefik solo usa réplicas listas. `services/ms-consultar/verificar.sh` lo comprueba por el gateway, incluido apagarlo, encenderlo y escalarlo a tres réplicas (27 comprobaciones, sin fallos el 2026-11-17).
 
-**Todavía no existe:** los demás microservicios, frontend ni flujo de n8n. La base de datos está vacía: los datos de prueba son la tarea T17.
+**Todavía no existe:** ms-borrar, ms-log, frontend ni flujo de n8n. La base de datos está vacía: los datos de prueba son la tarea T17.
 
 **En curso:** ver la columna Estado del tablero.
 
@@ -128,7 +130,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 | T05 | `libs/common`: entidad Persona, DTO y validaciones, guard JWT con roles, módulo de auditoría transaccional | libs/common/ | T03, T04 | Hecha | Carlos Ruidiaz | feat/T05-libs-common |
 | T06 | ms-crear | services/ms-crear/ | T05 | Hecha | Carlos Ruidiaz | feat/T06-ms-crear |
 | T07 | ms-modificar (búsqueda previa + actualización) | services/ms-modificar/ | T05 | Hecha | Carlos Ruidiaz | feat/T07-ms-modificar |
-| T08 | ms-consultar con endpoint health y perfil de Compose | services/ms-consultar/ | T05 | En curso | Carlos Ruidiaz | feat/T08-ms-consultar |
+| T08 | ms-consultar con endpoint health y perfil de Compose | services/ms-consultar/ | T05 | Hecha | Carlos Ruidiaz | feat/T08-ms-consultar |
 | T09 | ms-borrar (búsqueda previa + borrado) | services/ms-borrar/ | T05 | Pendiente | | |
 | T10 | ms-log: consulta con filtros y endpoint para n8n con llave de API | services/ms-log/ | T05 | Pendiente | | |
 | T11 | Frontend base: login con Keycloak, menú por rol, Dockerfile con Nginx | frontend/ | T04 | Pendiente | | |
@@ -166,6 +168,7 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 
 | Fecha | Decisión | Motivo | Quién |
 | --- | --- | --- | --- |
+| 2026-11-17 | `GET /api/consultar/health` comprueba la base de datos: responde 200 si llega a ella y 503 si no. Con el contenedor apagado, Traefik responde 404. El frontend (T11, T13) debe tratar cualquier respuesta distinta de 200 como «Consultar no disponible». ms-consultar tiene un healthcheck en Compose sobre esa ruta | Un servicio que corre pero no llega a la base de datos tampoco puede consultar. Con el healthcheck, Traefik no envía peticiones a una réplica que todavía está arrancando | Carlos Ruidiaz |
 | 2026-11-16 | En `PUT /api/modificar/personas/{documento}` se envían todos los campos del formulario. La foto se conserva si no llega archivo, y se quita con `eliminarFoto=true`. Un número de documento en el cuerpo se ignora. El log guarda anterior y nuevo solo de los campos que cambiaron | El diseño no detalla cómo quitar la foto ni el contenido exacto del detalle. El frontend (T12) depende de este contrato | Carlos Ruidiaz |
 | 2026-11-16 | Todos los servicios devuelven una persona con la misma forma, `PersonaRespuesta` (en `libs/common`): los campos del formulario, `fechaNacimiento` como `yyyy-mm-dd`, `tieneFoto` y, solo donde se pide, `foto` como texto `data:image/...;base64,...` listo para un `<img>` | Un solo contrato para el frontend (T12 y T13). La foto en la misma respuesta evita una segunda petición con token | Carlos Ruidiaz |
 | 2026-11-16 | `@Auditar` acepta un segundo parámetro de contexto (`CONTEXTO_PREVIO_MODIFICAR`, `CONTEXTO_PREVIO_BORRAR`) que se guarda en el detalle del log | El diseño pide que el detalle de las búsquedas previas indique que preceden a una modificación o a un borrado | Carlos Ruidiaz |

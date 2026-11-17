@@ -110,8 +110,8 @@ r=$(curl -s -w '\n%{http_code}' -X PUT "$URL/$DOC" -H "Authorization: Bearer $TO
 igual "también acepta JSON: responde 200" 200 "$(codigo "$r")"
 igual "aplica todos los campos" "Tarjeta de identidad|Otra||2010-12-31|3000000001" "$(en_bd "tipo_documento || '|' || primer_nombre || '|' || coalesce(segundo_nombre, '') || '|' || fecha_nacimiento || '|' || celular")"
 
-echo "Independencia y documentación:"
-comprobar "funciona aunque ms-consultar no exista o esté apagado" test "$(curl -s -o /dev/null -w '%{http_code}' "$APP/api/consultar/health")" != 200
+echo "Documentación:"
+# Que la búsqueda previa funcione con ms-consultar apagado lo comprueba services/ms-consultar/verificar.sh.
 comprobar "publica OpenAPI en /api/modificar/docs-json" contiene "$(curl -s "$APP/api/modificar/docs-json")" '"/api/modificar/personas/{documento}"'
 
 limpiar_pruebas
