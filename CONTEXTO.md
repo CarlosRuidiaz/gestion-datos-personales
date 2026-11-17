@@ -122,8 +122,8 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 | T03 | `database/init.sql`: tablas, vista_personas, índices, usuarios de BD y permisos | database/ | T02 | Hecha | Carlos Ruidiaz | feat/T03-base-de-datos |
 | T04 | Keycloak: realm.json con cliente del frontend (PKCE), roles, usuarios de prueba e importación automática | keycloak/ | T02 | Hecha | Carlos Ruidiaz | feat/T04-keycloak |
 | T05 | `libs/common`: entidad Persona, DTO y validaciones, guard JWT con roles, módulo de auditoría transaccional | libs/common/ | T03, T04 | Hecha | Carlos Ruidiaz | feat/T05-libs-common |
-| T06 | ms-crear | services/ms-crear/ | T05 | Pendiente | | |
-| T07 | ms-modificar (búsqueda previa + actualización) | services/ms-modificar/ | T05 | Pendiente | | |
+| T06 | ms-crear | services/ms-crear/ | T05 | En curso | Carlos Ruidiaz | feat/T06-ms-crear |
+| T07 | ms-modificar (búsqueda previa + actualización) | services/ms-modificar/ | T05 | En curso | Carlos Ruidiaz | feat/T07-ms-modificar |
 | T08 | ms-consultar con endpoint health y perfil de Compose | services/ms-consultar/ | T05 | Pendiente | | |
 | T09 | ms-borrar (búsqueda previa + borrado) | services/ms-borrar/ | T05 | Pendiente | | |
 | T10 | ms-log: consulta con filtros y endpoint para n8n con llave de API | services/ms-log/ | T05 | Pendiente | | |
