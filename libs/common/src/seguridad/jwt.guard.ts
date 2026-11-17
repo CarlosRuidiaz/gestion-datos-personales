@@ -1,8 +1,8 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Rol, TipoTransaccion } from '../constantes';
+import { Rol } from '../constantes';
 import { CLAVE_AUDITAR, CLAVE_PUBLICO, CLAVE_ROLES } from './decoradores';
-import { DatosDePeticion } from './usuario';
+import { DatosDeAuditoria, DatosDePeticion } from './usuario';
 import { VerificadorToken } from './verificador-token.service';
 
 const ROLES_DE_LA_APLICACION: Rol[] = [Rol.ADMINISTRADOR, Rol.CONSULTOR];
@@ -25,9 +25,9 @@ export class JwtGuard implements CanActivate {
     const destinos = [contexto.getHandler(), contexto.getClass()];
     const peticion = contexto.switchToHttp().getRequest<DatosDePeticion & { headers: Record<string, string> }>();
 
-    const tipo = this.reflector.getAllAndOverride<TipoTransaccion | undefined>(CLAVE_AUDITAR, destinos);
-    if (tipo) {
-      peticion.auditoria = { tipo };
+    const auditoria = this.reflector.getAllAndOverride<DatosDeAuditoria | undefined>(CLAVE_AUDITAR, destinos);
+    if (auditoria) {
+      peticion.auditoria = auditoria;
     }
 
     if (this.reflector.getAllAndOverride<boolean | undefined>(CLAVE_PUBLICO, destinos)) {

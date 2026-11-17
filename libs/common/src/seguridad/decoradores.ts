@@ -1,6 +1,6 @@
 import { createParamDecorator, ExecutionContext, SetMetadata } from '@nestjs/common';
 import { Rol, TipoTransaccion } from '../constantes';
-import { UsuarioAutenticado } from './usuario';
+import { DatosDeAuditoria, UsuarioAutenticado } from './usuario';
 
 export const CLAVE_ROLES = 'gdp:roles';
 export const CLAVE_PUBLICO = 'gdp:publico';
@@ -19,9 +19,16 @@ export const Publico = () => SetMetadata(CLAVE_PUBLICO, true);
 /**
  * Tipo de transacción de la ruta. Es obligatorio en toda ruta protegida: con él,
  * las peticiones rechazadas (400, 403, 404, 409) quedan en el log automáticamente.
- * Ejemplo: @Auditar(TipoTransaccion.CREAR)
+ * El contexto es opcional y se guarda en el detalle de esos registros de error.
+ * Ejemplos: @Auditar(TipoTransaccion.CREAR)
+ *           @Auditar(TipoTransaccion.CONSULTAR, CONTEXTO_PREVIO_MODIFICAR)
  */
-export const Auditar = (tipo: TipoTransaccion) => SetMetadata(CLAVE_AUDITAR, tipo);
+export const Auditar = (tipo: TipoTransaccion, contexto?: string) =>
+  SetMetadata<string, DatosDeAuditoria>(CLAVE_AUDITAR, contexto ? { tipo, contexto } : { tipo });
+
+/** Contexto de las búsquedas que hacen Modificar y Borrar antes de operar (sección 5.2 del diseño). */
+export const CONTEXTO_PREVIO_MODIFICAR = 'Búsqueda previa a una modificación';
+export const CONTEXTO_PREVIO_BORRAR = 'Búsqueda previa a un borrado';
 
 /** Inyecta el usuario autenticado en un parámetro del controlador. */
 export const UsuarioActual = createParamDecorator((_dato: unknown, contexto: ExecutionContext): UsuarioAutenticado => {

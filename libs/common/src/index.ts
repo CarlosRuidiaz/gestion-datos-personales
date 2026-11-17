@@ -5,6 +5,7 @@ export * from './configurar-aplicacion';
 
 export * from './persona/persona.entity';
 export * from './persona/persona.dto';
+export * from './persona/persona.respuesta';
 export * from './persona/documento.pipe';
 export * from './persona/fecha';
 export * from './persona/foto';

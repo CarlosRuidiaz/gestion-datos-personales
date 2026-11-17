@@ -3,7 +3,7 @@
 > Este es el documento de contexto del repositorio. Cualquier integrante del equipo, o la IA que use, debe leerlo completo antes de trabajar.
 > Uso: haz `git pull`, abre tu IA en la carpeta del repositorio y pídele «Lee CONTEXTO.md y dime en qué estado está el proyecto y qué me toca hacer».
 
-**Última actualización:** 2026-11-16, por Carlos Ruidiaz (tarea T05)
+**Última actualización:** 2026-11-16, por Carlos Ruidiaz (tarea T06)
 **Fase actual:** Fase 2 · Frentes paralelos (microservicios, frontend, n8n y calidad)
 
 ---
@@ -54,7 +54,7 @@ cp .env.example .env        # completar llaves y contraseñas (hoy son obligator
 docker compose --profile consultar up -d --build
 ```
 
-Qué arranca hoy: `gateway` (Traefik), `postgres` (PostgreSQL 16 con pgvector) y `keycloak`. Los demás servicios están comentados al final de `docker-compose.yml` y cada tarea descomenta el suyo.
+Qué arranca hoy: `gateway` (Traefik), `postgres` (PostgreSQL 16 con pgvector), `keycloak` y `ms-crear`. Los demás servicios están comentados al final de `docker-compose.yml` y cada tarea agrega el suyo.
 
 Cómo comprobar que funciona:
 
@@ -65,6 +65,7 @@ docker compose exec -T postgres sh < database/verificar.sh   # esquema, restricc
 bash keycloak/verificar.sh             # realm, roles, usuarios de prueba y login con PKCE: termina con TODO BIEN (en Windows, con Git Bash)
 npm install && npm run test:common     # pruebas unitarias de libs/common (no necesitan contenedores)
 bash libs/common/pruebas-integracion.sh   # guard, validaciones y log transaccional contra PostgreSQL y Keycloak reales
+bash services/ms-crear/verificar.sh     # ms-crear de extremo a extremo, por el gateway y con tokens reales
 ```
 
 Si ya habías arrancado el proyecto antes de T03, tu base de datos local no tiene las tablas: completa las `DB_PASSWORD_*` en tu `.env` y recrea el volumen con `docker compose down -v` antes de volver a arrancar.
@@ -97,8 +98,9 @@ Configuración inicial de n8n (una sola vez): pendiente de documentar en la tare
 - T03: `database/init.sql` con las tablas `persona`, `log_transaccion` y `persona_embedding`, la vista `vista_personas`, los índices del log, los seis usuarios de base de datos y sus permisos. `database/init-usuarios.sh` les asigna las contraseñas de `.env`. `database/verificar.sh` comprueba todo; probado el 2026-11-16 sin fallos. Lo que debe saber quien programe contra la base está en `database/README.md`.
 - T04: Keycloak 26.8 en Compose con importación automática de `keycloak/realm.json`: realm `gestion-personas`, roles `administrador` y `consultor`, cliente `frontend` (código de autorización con PKCE obligatorio), cliente `pruebas` (tokens para Postman y scripts) y usuarios `admin.prueba` y `consultor.prueba` con contraseñas tomadas de `.env`. Tokens de 5 minutos. `keycloak/verificar.sh` comprueba todo, incluido el login completo con PKCE; probado el 2026-11-16 sin fallos. Lo que deben saber T05 y T11 está en `keycloak/README.md`.
 - T05: librería `@gdp/common` en `libs/common` (workspaces de npm): entidades `Persona` y `LogTransaccion`, DTO con las validaciones de la sección 3.3, guard JWT con roles, filtro que registra en el log las peticiones rechazadas y `AuditoriaService` para registrar las exitosas dentro de su transacción. `ComunModule.forRoot()` lo configura todo con un solo import. Probado el 2026-11-16: 51 pruebas unitarias y 13 de integración contra PostgreSQL y Keycloak reales, sin fallos; además se construyó en Docker un servicio de ejemplo que respondió a través de Traefik. **Quien vaya a hacer un microservicio (T06 a T10) debe leer `libs/common/README.md`**: tiene las tres reglas y la plantilla probada (package.json, main.ts, Dockerfile).
+- T06: `ms-crear` en Compose, con `POST /api/crear/personas` (formulario `multipart` con foto opcional, o JSON). Crea la persona y su log en una transacción; responde 201, 400 con la lista de campos, 403 y 409, y todos los rechazos quedan en el log. OpenAPI en `/api/crear/docs`. `services/ms-crear/verificar.sh` lo comprueba por el gateway (36 comprobaciones, sin fallos el 2026-11-16). `services/verificar-comun.sh` tiene las funciones que reutilizan los `verificar.sh` de los demás servicios. Falta el aviso a n8n, que es la tarea T16.
 
-**Todavía no existe:** ningún microservicio, frontend ni flujo de n8n. La base de datos está vacía: los datos de prueba son la tarea T17.
+**Todavía no existe:** los demás microservicios, frontend ni flujo de n8n. La base de datos está vacía: los datos de prueba son la tarea T17.
 
 **En curso:** ver la columna Estado del tablero.
 
@@ -122,7 +124,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 | T03 | `database/init.sql`: tablas, vista_personas, índices, usuarios de BD y permisos | database/ | T02 | Hecha | Carlos Ruidiaz | feat/T03-base-de-datos |
 | T04 | Keycloak: realm.json con cliente del frontend (PKCE), roles, usuarios de prueba e importación automática | keycloak/ | T02 | Hecha | Carlos Ruidiaz | feat/T04-keycloak |
 | T05 | `libs/common`: entidad Persona, DTO y validaciones, guard JWT con roles, módulo de auditoría transaccional | libs/common/ | T03, T04 | Hecha | Carlos Ruidiaz | feat/T05-libs-common |
-| T06 | ms-crear | services/ms-crear/ | T05 | En curso | Carlos Ruidiaz | feat/T06-ms-crear |
+| T06 | ms-crear | services/ms-crear/ | T05 | Hecha | Carlos Ruidiaz | feat/T06-ms-crear |
 | T07 | ms-modificar (búsqueda previa + actualización) | services/ms-modificar/ | T05 | En curso | Carlos Ruidiaz | feat/T07-ms-modificar |
 | T08 | ms-consultar con endpoint health y perfil de Compose | services/ms-consultar/ | T05 | Pendiente | | |
 | T09 | ms-borrar (búsqueda previa + borrado) | services/ms-borrar/ | T05 | Pendiente | | |
@@ -162,6 +164,10 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 
 | Fecha | Decisión | Motivo | Quién |
 | --- | --- | --- | --- |
+| 2026-11-16 | Todos los servicios devuelven una persona con la misma forma, `PersonaRespuesta` (en `libs/common`): los campos del formulario, `fechaNacimiento` como `yyyy-mm-dd`, `tieneFoto` y, solo donde se pide, `foto` como texto `data:image/...;base64,...` listo para un `<img>` | Un solo contrato para el frontend (T12 y T13). La foto en la misma respuesta evita una segunda petición con token | Carlos Ruidiaz |
+| 2026-11-16 | `@Auditar` acepta un segundo parámetro de contexto (`CONTEXTO_PREVIO_MODIFICAR`, `CONTEXTO_PREVIO_BORRAR`) que se guarda en el detalle del log | El diseño pide que el detalle de las búsquedas previas indique que preceden a una modificación o a un borrado | Carlos Ruidiaz |
+| 2026-11-16 | En las rutas con formulario `multipart`, el registro de log de un 403 queda sin número de documento | El guard rechaza la petición antes de que se lea el formulario. El usuario, el tipo y el resultado sí quedan | Carlos Ruidiaz |
+| 2026-11-16 | Cada microservicio tiene un `verificar.sh` que lo prueba por el gateway con tokens reales, apoyado en `services/verificar-comun.sh` | Comprobar cada servicio de extremo a extremo sin esperar a Postman (T19) ni a Jest (T18) | Carlos Ruidiaz |
 | 2026-11-16 | Los errores de validación responden 400 con `errores: [{ campo, mensaje }]` (un mensaje por campo, en español). La API recibe la fecha como `dd-mmm-yyyy` o `yyyy-mm-dd` y la guarda como `yyyy-mm-dd`. La foto llega como archivo `multipart`, no en el DTO | Concreta la sección 8.1 del diseño. El frontend (T12) depende de este formato | Carlos Ruidiaz |
 | 2026-11-16 | El log de las peticiones rechazadas (400, 403, 404, 409 y 500) lo escribe un filtro global de `libs/common`; los servicios solo lanzan la excepción. El log de éxito lo escribe el servicio dentro de su transacción con `AuditoriaService`. Toda ruta protegida debe llevar `@Auditar(tipo)` | El 403 lo decide el guard antes de llegar al servicio, así que no se puede registrar desde el servicio. Una sola regla para los cinco servicios | Carlos Ruidiaz |
 | 2026-11-16 | El repositorio usa workspaces de npm (`libs/*` y `services/*`) con un solo `package-lock.json` en la raíz. Los servicios dependen de `@gdp/common` y se construyen con el contexto de Docker en la raíz. Hay un `.dockerignore` en la raíz que deja fuera `.env` | Es la forma más simple de compartir la librería sin publicarla. Plantilla probada en `libs/common/README.md` | Carlos Ruidiaz |

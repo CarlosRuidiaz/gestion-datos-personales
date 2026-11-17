@@ -12,6 +12,8 @@ Cambiar algo aquí afecta a todos los servicios: regístralo en la sección 7 de
 | `configurarAplicacion(app, opciones)` | Prefijo de ruta del servicio y documentación OpenAPI en `/<prefijo>/docs` |
 | `Persona`, `LogTransaccion` | Entidades de TypeORM de las tablas `persona` y `log_transaccion` |
 | `CrearPersonaDto`, `ModificarPersonaDto` | Validaciones de la sección 3.3, con los mensajes en español |
+| `PersonaRespuesta`, `aPersonaRespuesta(persona, { incluirFoto })` | Forma única en que los servicios devuelven una persona. Con `incluirFoto`, la foto va como `data:image/...;base64,...` |
+| `datosParaLog(persona)` | Datos de la persona para el detalle del log, sin la foto |
 | `DocumentoPipe` | Valida el documento de la ruta (`/personas/:documento`) |
 | `validarFoto(archivo)` | Foto opcional, JPG o PNG reales (por contenido) de máximo 2 MB |
 | `parsearFecha`, `formatearFecha` | Fechas `dd-mmm-yyyy` y `yyyy-mm-dd` |
@@ -79,6 +81,9 @@ Otros detalles:
 - **Log.** Nunca se escribe con `save()` ni `insert()` de TypeORM sobre `LogTransaccion`: agregan `RETURNING` y fallan por permisos. Siempre con `AuditoriaService`. El detalle no debe incluir la foto.
 - **Rutas sin token.** Solo las marcadas con `@Publico()`, como `GET /api/consultar/health`.
 - **Sin `@Roles`.** La ruta admite a cualquier usuario con uno de los dos roles de la aplicación.
+- **Búsquedas previas.** En Modificar y Borrar, la búsqueda lleva `@Auditar(TipoTransaccion.CONSULTAR, CONTEXTO_PREVIO_MODIFICAR)` (o `CONTEXTO_PREVIO_BORRAR`), y el registro de éxito pone ese mismo texto en `detalle.contexto`.
+- **Formularios `multipart`.** El 403 se decide antes de leer el formulario, así que ese registro del log queda sin número de documento.
+- **Ejemplo real.** `services/ms-crear` es el primer servicio hecho con esta plantilla, con su `verificar.sh`.
 
 ## Cómo crear un microservicio que la use
 
