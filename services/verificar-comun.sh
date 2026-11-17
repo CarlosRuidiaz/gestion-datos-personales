@@ -114,6 +114,17 @@ crear_fotos_de_prueba() {
     printf '%%PDF-1.7 esto no es una imagen' > "$DIR_TMP/falsa.png"
 }
 
+# Inserta directamente en la base de datos una persona de prueba, sin foto, para los servicios
+# que parten de una persona existente (así su verificación no depende de ms-crear).
+insertar_persona_de_prueba() {
+    sql "INSERT INTO persona (numero_documento, tipo_documento, primer_nombre, segundo_nombre, apellidos, fecha_nacimiento, genero, correo, celular)
+         VALUES ('$1', 'Cédula', 'Prueba', NULL, 'De Verificación', '2003-03-05', 'No binario', 'prueba.verificacion@example.com', '3000000000')" >/dev/null
+}
+
+# Separa la respuesta de «curl -s -w '\n%{http_code}'» en código y cuerpo.
+codigo() { printf '%s' "$1" | tail -n 1; }
+cuerpo() { printf '%s' "$1" | sed '$d'; }
+
 terminar() {
     [ -n "${DIR_TMP:-}" ] && rm -rf "$DIR_TMP"
     echo
