@@ -10,8 +10,15 @@ export interface UsuarioAutenticado {
   id: string;
 }
 
+/** Lo que declara @Auditar en una ruta. */
+export interface DatosDeAuditoria {
+  tipo: TipoTransaccion;
+  /** Aclaración que se guarda en el detalle del log, por ejemplo «Búsqueda previa a un borrado». */
+  contexto?: string;
+}
+
 /** Datos que el guard deja en la petición para el controlador y para el filtro de auditoría. */
 export interface DatosDePeticion {
   usuario?: UsuarioAutenticado;
-  auditoria?: { tipo: TipoTransaccion };
+  auditoria?: DatosDeAuditoria;
 }

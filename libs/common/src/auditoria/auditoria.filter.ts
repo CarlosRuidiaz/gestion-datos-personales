@@ -41,6 +41,7 @@ export class FiltroAuditoria extends BaseExceptionFilter {
     const documento = typeof recibido === 'string' && DOCUMENTO_VALIDO.test(recibido.trim()) ? recibido.trim() : null;
 
     const detalle: Record<string, unknown> = { estado, motivo: this.motivo(excepcion) };
+    if (peticion.auditoria.contexto) detalle.contexto = peticion.auditoria.contexto;
     const errores = this.errores(excepcion);
     if (errores) detalle.errores = errores;
     if (!documento && recibido !== undefined && recibido !== null) {
