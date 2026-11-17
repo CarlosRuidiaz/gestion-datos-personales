@@ -28,8 +28,6 @@ crear() {
     curl -s -w '
 %{http_code}' -X POST "$URL" ${token:+-H "Authorization: Bearer $token"} "${FORM[@]}" "$@"
 }
-codigo() { printf '%s' "$1" | tail -n 1; }
-cuerpo() { printf '%s' "$1" | sed '$d'; }
 
 echo "Permisos:"
 r=$(crear "" $DOC)

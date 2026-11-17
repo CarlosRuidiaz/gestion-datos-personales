@@ -135,13 +135,40 @@ services:
       - traefik.http.routers.ms-crear.entrypoints=web
       - traefik.http.services.ms-crear.loadbalancer.server.port=3000
 
+  ms-modificar:
+    build:
+      context: .
+      dockerfile: services/ms-modificar/Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-gestion_personas}
+      DB_USER: usr_modificar
+      DB_PASSWORD: ${DB_PASSWORD_MODIFICAR:?Falta DB_PASSWORD_MODIFICAR en .env}
+      KEYCLOAK_PUBLIC_URL: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}
+      KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-gestion-personas}
+      TZ: ${TZ:-America/Bogota}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - frontal
+      - datos
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ms-modificar.rule=PathPrefix(`/api/modificar`)
+      - traefik.http.routers.ms-modificar.entrypoints=web
+      - traefik.http.services.ms-modificar.loadbalancer.server.port=3000
+
   # ---------------------------------------------------------------------------
   # Servicios pendientes. Son un punto de partida: quien haga la tarea ajusta
   # imagen, variables y etiquetas, y registra en la sección 7 de CONTEXTO.md lo
   # que se aparte del diseño.
   # ---------------------------------------------------------------------------
 
-  # --- T07, T09, T10: microservicios. Copia el bloque de ms-crear de arriba y cambia el nombre,
+  # --- T09, T10: microservicios. Copia el bloque de ms-crear de arriba y cambia el nombre,
   #     el Dockerfile, el usuario de BD (usr_modificar...), su contraseña y el prefijo de ruta.
 
   # --- T08: ms-consultar (perfil propio: se habilita y deshabilita según demanda, DD-04)
