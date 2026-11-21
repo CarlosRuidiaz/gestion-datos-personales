@@ -134,7 +134,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 | T07 | ms-modificar (búsqueda previa + actualización) | services/ms-modificar/ | T05 | Hecha | Carlos Ruidiaz | feat/T07-ms-modificar |
 | T08 | ms-consultar con endpoint health y perfil de Compose | services/ms-consultar/ | T05 | Hecha | Carlos Ruidiaz | feat/T08-ms-consultar |
 | T09 | ms-borrar (búsqueda previa + borrado) | services/ms-borrar/ | T05 | Hecha | Carlos Ruidiaz | feat/T09-ms-borrar |
-| T10 | ms-log: consulta con filtros y endpoint para n8n con llave de API | services/ms-log/ | T05 | Pendiente | | |
+| T10 | ms-log: consulta con filtros y endpoint para n8n con llave de API | services/ms-log/ | T05 | En curso | Claudia Elias | feat/T10-ms-log |
 | T11 | Frontend base: login con Keycloak, menú por rol, Dockerfile con Nginx | frontend/ | T04 | Pendiente | | |
 | T12 | Formulario de persona con validaciones (crear y modificar) | frontend/ | T11, T06, T07 | Pendiente | | |
 | T13 | Pantallas de consultar, borrar y log | frontend/ | T11, T08, T09, T10 | Pendiente | | |
