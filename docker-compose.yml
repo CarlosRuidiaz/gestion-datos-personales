@@ -189,14 +189,41 @@ services:
       - traefik.http.routers.ms-borrar.entrypoints=web
       - traefik.http.services.ms-borrar.loadbalancer.server.port=3000
 
+  # --- T10: ms-log. Consulta del log (los dos roles) y registro de las consultas
+  #     en lenguaje natural que envía n8n con su llave de API (N8N_LOG_API_KEY).
+  ms-log:
+    build:
+      context: .                      # contexto en la raíz: necesita libs/common y package-lock.json
+      dockerfile: services/ms-log/Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-gestion_personas}
+      DB_USER: usr_log
+      DB_PASSWORD: ${DB_PASSWORD_LOG:?Falta DB_PASSWORD_LOG en .env}
+      KEYCLOAK_PUBLIC_URL: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}
+      KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-gestion-personas}
+      N8N_LOG_API_KEY: ${N8N_LOG_API_KEY:?Falta N8N_LOG_API_KEY en .env}
+      TZ: ${TZ:-America/Bogota}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - frontal
+      - datos
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ms-log.rule=PathPrefix(`/api/log`)
+      - traefik.http.routers.ms-log.entrypoints=web
+      - traefik.http.services.ms-log.loadbalancer.server.port=3000
+
   # ---------------------------------------------------------------------------
   # Servicios pendientes. Son un punto de partida: quien haga la tarea ajusta
   # imagen, variables y etiquetas, y registra en la sección 7 de CONTEXTO.md lo
   # que se aparte del diseño.
   # ---------------------------------------------------------------------------
-
-  # --- T10: ms-log. Copia el bloque de ms-crear de arriba y cambia el nombre,
-  #     el Dockerfile, el usuario de BD (usr_log), su contraseña y el prefijo de ruta.
 
   # --- T08: ms-consultar (perfil propio: se habilita y deshabilita según demanda, DD-04)
   # Arranca solo con --profile consultar. Sin container_name, para poder escalar:
