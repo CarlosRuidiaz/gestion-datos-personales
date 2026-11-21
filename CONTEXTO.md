@@ -115,6 +115,11 @@ Configuración inicial de n8n (una sola vez): pendiente de documentar en la tare
 **Bloqueos o problemas conocidos:**
 - (ninguno)
 
+**Avisos para el equipo:**
+- 2026-11-21, T10 (Claudia Elias): cambiaron `docker-compose.yml` y dos contratos de API (sección 8, punto 4).
+  - `N8N_LOG_API_KEY` ahora es obligatoria: sin ella `docker compose` no arranca, ni siquiera para levantar solo `postgres`. Después del pull, pon en tu `.env` una cadena aleatoria larga (en Git Bash: `openssl rand -hex 32`). Cada equipo usa la suya; en T15 la misma llave se configura dentro de n8n.
+  - T13 (pantalla del log) y T15 (registro de las consultas de n8n) deben leer `services/ms-log/README.md`, que tiene los contratos de `GET /api/log` y `POST /api/log/consulta-nl`. Las decisiones están en la sección 7.
+
 ### Siguiente paso recomendado
 
 La siguiente tarea a tomar es la primera del tablero que esté **Pendiente**, sin responsable y con todas sus dependencias en **Hecha**. Si hay varias disponibles, se prefiere la de la fase más temprana. La IA debe calcular esto leyendo el tablero, y no adivinarlo.
