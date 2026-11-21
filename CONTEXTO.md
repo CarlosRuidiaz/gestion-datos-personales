@@ -3,7 +3,7 @@
 > Este es el documento de contexto del repositorio. Cualquier integrante del equipo, o la IA que use, debe leerlo completo antes de trabajar.
 > Uso: haz `git pull`, abre tu IA en la carpeta del repositorio y pídele «Lee CONTEXTO.md y dime en qué estado está el proyecto y qué me toca hacer».
 
-**Última actualización:** 2026-11-19, por Carlos Ruidiaz (tarea T09)
+**Última actualización:** 2026-11-21, por Claudia Elias (tarea T10)
 **Fase actual:** Fase 2 · Frentes paralelos (microservicios, frontend, n8n y calidad)
 
 ---
@@ -50,11 +50,11 @@ Reglas de diseño que no se deben romper sin registrar una decisión en la secci
 Requisitos: Docker Desktop (con WSL2 en Windows) y Git. Los puertos 80 y 8080 deben estar libres. Para programar los microservicios hace falta además Node.js 22 o superior (se usa Node 24 en los contenedores).
 
 ```bash
-cp .env.example .env        # completar llaves y contraseñas (hoy son obligatorias POSTGRES_PASSWORD, las seis DB_PASSWORD_* y las tres de Keycloak)
+cp .env.example .env        # completar llaves y contraseñas (hoy son obligatorias POSTGRES_PASSWORD, las seis DB_PASSWORD_*, las tres de Keycloak y N8N_LOG_API_KEY)
 docker compose --profile consultar up -d --build
 ```
 
-Qué arranca hoy: `gateway` (Traefik), `postgres` (PostgreSQL 16 con pgvector), `keycloak`, `ms-crear`, `ms-modificar`, `ms-borrar` y, solo con `--profile consultar`, `ms-consultar`. Para apagar, encender o escalar Consultar: `docker compose stop ms-consultar`, `docker compose up -d ms-consultar` y `docker compose up -d --scale ms-consultar=3 ms-consultar`. Los demás servicios están comentados al final de `docker-compose.yml` y cada tarea agrega el suyo.
+Qué arranca hoy: `gateway` (Traefik), `postgres` (PostgreSQL 16 con pgvector), `keycloak`, `ms-crear`, `ms-modificar`, `ms-borrar`, `ms-log` y, solo con `--profile consultar`, `ms-consultar`. Para apagar, encender o escalar Consultar: `docker compose stop ms-consultar`, `docker compose up -d ms-consultar` y `docker compose up -d --scale ms-consultar=3 ms-consultar`. Los demás servicios están comentados al final de `docker-compose.yml` y cada tarea agrega el suyo.
 
 Cómo comprobar que funciona:
 
@@ -69,6 +69,7 @@ bash services/ms-crear/verificar.sh     # ms-crear de extremo a extremo, por el 
 bash services/ms-modificar/verificar.sh # ms-modificar de extremo a extremo (no necesita ms-crear ni ms-consultar)
 bash services/ms-borrar/verificar.sh    # ms-borrar de extremo a extremo (no necesita ms-crear ni ms-consultar)
 bash services/ms-consultar/verificar.sh # ms-consultar de extremo a extremo, incluido apagarlo, encenderlo y escalarlo
+bash services/ms-log/verificar.sh       # ms-log de extremo a extremo: filtros, paginación y registro de n8n con su llave
 ```
 
 Si ya habías arrancado el proyecto antes de T03, tu base de datos local no tiene las tablas: completa las `DB_PASSWORD_*` en tu `.env` y recrea el volumen con `docker compose down -v` antes de volver a arrancar.
@@ -105,13 +106,19 @@ Configuración inicial de n8n (una sola vez): pendiente de documentar en la tare
 - T07: `ms-modificar` en Compose, con `GET` y `PUT /api/modificar/personas/{documento}`. La búsqueda previa es propia (no depende de ms-consultar), devuelve la foto y queda en el log como `CONSULTAR` con su contexto. La modificación y su log van en una transacción; el log guarda el valor anterior y el nuevo de los campos que cambiaron. La foto se reemplaza, se conserva o se quita con `eliminarFoto`. `services/ms-modificar/verificar.sh` lo comprueba por el gateway (50 comprobaciones, sin fallos el 2026-11-16). Falta el aviso a n8n (T16).
 - T08: `ms-consultar` en el perfil `consultar` de Compose, con `GET /api/consultar/personas/{documento}` para los dos roles (ficha completa con foto, log `CONSULTAR` en la misma transacción) y `GET /api/consultar/health` sin token (200, o 503 si no llega a la base de datos; con el contenedor apagado, Traefik responde 404). Tiene healthcheck en Compose, así que Traefik solo usa réplicas listas. `services/ms-consultar/verificar.sh` lo comprueba por el gateway, incluido apagarlo, encenderlo y escalarlo a tres réplicas (27 comprobaciones, sin fallos el 2026-11-17).
 - T09: `ms-borrar` en Compose, con `GET` y `DELETE /api/borrar/personas/{documento}`, solo para el administrador. La búsqueda previa es propia (no depende de ms-consultar), devuelve la foto para revisar antes de confirmar y queda en el log como `CONSULTAR` con el contexto «Búsqueda previa a un borrado». El borrado responde 204 y va con su log en una transacción; el detalle guarda los datos que tenía la persona, así su historial queda completo (CP-05). `services/ms-borrar/verificar.sh` lo comprueba por el gateway (34 comprobaciones, sin fallos el 2026-11-19). Falta el aviso a n8n (T16).
+- T10: `ms-log` en Compose, con `GET /api/log` para los dos roles (filtros opcionales `tipo`, `documento`, `desde` y `hasta`, que se combinan; fechas como días completos en hora de Bogotá; paginación con `pagina` y `tamano`; del más reciente al más antiguo) y `POST /api/log/consulta-nl` para n8n, protegido con la llave `N8N_LOG_API_KEY` en la cabecera `X-API-Key` (registra `CONSULTA_NL` con pregunta, respuesta y resultado). Los contratos exactos, para T13 y T15, están en `services/ms-log/README.md`. `services/ms-log/verificar.sh` lo comprueba por el gateway (49 comprobaciones, sin fallos el 2026-11-21), incluido CP-05 y CP-06.
 
-**Todavía no existe:** ms-log, frontend ni flujo de n8n. La base de datos está vacía: los datos de prueba son la tarea T17.
+**Todavía no existe:** frontend ni flujo de n8n. La base de datos está vacía: los datos de prueba son la tarea T17.
 
 **En curso:** ver la columna Estado del tablero.
 
 **Bloqueos o problemas conocidos:**
 - (ninguno)
+
+**Avisos para el equipo:**
+- 2026-11-21, T10 (Claudia Elias): cambiaron `docker-compose.yml` y dos contratos de API (sección 8, punto 4).
+  - `N8N_LOG_API_KEY` ahora es obligatoria: sin ella `docker compose` no arranca, ni siquiera para levantar solo `postgres`. Después del pull, pon en tu `.env` una cadena aleatoria larga (en Git Bash: `openssl rand -hex 32`). Cada equipo usa la suya; en T15 la misma llave se configura dentro de n8n.
+  - T13 (pantalla del log) y T15 (registro de las consultas de n8n) deben leer `services/ms-log/README.md`, que tiene los contratos de `GET /api/log` y `POST /api/log/consulta-nl`. Las decisiones están en la sección 7.
 
 ### Siguiente paso recomendado
 
@@ -134,7 +141,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 | T07 | ms-modificar (búsqueda previa + actualización) | services/ms-modificar/ | T05 | Hecha | Carlos Ruidiaz | feat/T07-ms-modificar |
 | T08 | ms-consultar con endpoint health y perfil de Compose | services/ms-consultar/ | T05 | Hecha | Carlos Ruidiaz | feat/T08-ms-consultar |
 | T09 | ms-borrar (búsqueda previa + borrado) | services/ms-borrar/ | T05 | Hecha | Carlos Ruidiaz | feat/T09-ms-borrar |
-| T10 | ms-log: consulta con filtros y endpoint para n8n con llave de API | services/ms-log/ | T05 | En curso | Claudia Elias | feat/T10-ms-log |
+| T10 | ms-log: consulta con filtros y endpoint para n8n con llave de API | services/ms-log/ | T05 | Hecha | Claudia Elias | feat/T10-ms-log |
 | T11 | Frontend base: login con Keycloak, menú por rol, Dockerfile con Nginx | frontend/ | T04 | Pendiente | | |
 | T12 | Formulario de persona con validaciones (crear y modificar) | frontend/ | T11, T06, T07 | Pendiente | | |
 | T13 | Pantallas de consultar, borrar y log | frontend/ | T11, T08, T09, T10 | Pendiente | | |
@@ -170,6 +177,9 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 
 | Fecha | Decisión | Motivo | Quién |
 | --- | --- | --- | --- |
+| 2026-11-21 | `POST /api/log/consulta-nl` no usa token de Keycloak: va con `@Publico()` y un guard propio que compara la cabecera `X-API-Key` con `N8N_LOG_API_KEY` (comparación de tiempo constante). Sin llave o con una distinta responde 401 y no se registra. Con la llave correcta, n8n queda como usuario `n8n`, así un 400 sí queda en el log como `CONSULTA_NL` `ERROR`. Cuerpo: `pregunta` (obligatoria, hasta 4000), `respuesta` (opcional, hasta 20000), `resultado` (`EXITO` o `ERROR`) y `detalle` (objeto opcional). Responde 201, o 500 si no pudo escribir. T15 depende de este contrato | El diseño solo dice «llave de API de n8n». El usuario `n8n` es «la cuenta de n8n» de la sección 6.2 del diseño | Claudia Elias |
+| 2026-11-21 | `GET /api/log` responde `{ total, pagina, tamano, registros }`, del más reciente al más antiguo, con `pagina` (desde 1) y `tamano` (por defecto 20, máximo 100). `desde` y `hasta` son días completos en la zona horaria `TZ` (`hasta` incluido), como `yyyy-mm-dd` o `dd-mmm-yyyy`; `desde` posterior a `hasta` responde 400. Cada registro trae `id` (texto), `fechaHora` (ISO 8601, UTC) y las demás columnas en camelCase. T13 depende de este contrato | La sección 8.2 del diseño pide una tabla paginada y no fija el formato | Claudia Elias |
+| 2026-11-21 | Consultar el log (`GET /api/log`) no se registra en el log, y la ruta no lleva `@Auditar` | La columna `tipo` no tiene un valor para esa operación y agregarlo obligaría a cambiar el esquema y recrear `pgdata` en todos los equipos. Registrarla como `CONSULTAR` mezclaría la revisión del log con las consultas de personas. El RF-08 se refiere a las transacciones sobre los datos personales | Claudia Elias |
 | 2026-11-18 | El registro de log de un borrado (`BORRAR`, `EXITO`) guarda en el detalle `anterior` (los datos que tenía la persona, sin la foto ni las fechas de creación y actualización) y `teniaFoto` | La persona deja de existir y el log es lo único que queda de ella; así su historial se puede leer completo (CP-05) sin guardar la imagen | Carlos Ruidiaz |
 | 2026-11-18 | ms-borrar no bloquea la fila con `SELECT ... FOR UPDATE` antes de borrar: busca la persona, la borra y, si el `DELETE` no afectó ninguna fila (otro borrado simultáneo ganó), responde 404 | En PostgreSQL, `FOR UPDATE` exige permiso de UPDATE, y `usr_borrar` solo tiene SELECT y DELETE (sección 6.3 del diseño). Ningún servicio sin UPDATE sobre una tabla puede usar `lock: pessimistic_write` en ella | Carlos Ruidiaz |
 | 2026-11-17 | `GET /api/consultar/health` comprueba la base de datos: responde 200 si llega a ella y 503 si no. Con el contenedor apagado, Traefik responde 404. El frontend (T11, T13) debe tratar cualquier respuesta distinta de 200 como «Consultar no disponible». ms-consultar tiene un healthcheck en Compose sobre esa ruta | Un servicio que corre pero no llega a la base de datos tampoco puede consultar. Con el healthcheck, Traefik no envía peticiones a una réplica que todavía está arrancando | Carlos Ruidiaz |
