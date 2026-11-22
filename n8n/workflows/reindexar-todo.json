@@ -1,0 +1,291 @@
+{
+  "id": "gdpReindexarTodo",
+  "name": "Reindexar todo",
+  "nodes": [
+    {
+      "id": "7a2d3b20-0002-4b00-8000-000000000001",
+      "name": "Ejecutar a mano",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "7a2d3b20-0002-4b00-8000-000000000002",
+      "name": "Borrar vectores huérfanos",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Vectores de personas que ya no existen.\nDELETE FROM persona_embedding e\nWHERE NOT EXISTS (SELECT 1 FROM vista_personas v WHERE v.numero_documento = e.metadata ->> 'numero_documento');",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "gdpCredPostgres1",
+          "name": "PostgreSQL (usr_n8n)"
+        }
+      }
+    },
+    {
+      "id": "7a2d3b20-0002-4b00-8000-000000000003",
+      "name": "Leer personas",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT numero_documento, tipo_documento, primer_nombre, segundo_nombre, apellidos,\n       to_char(fecha_nacimiento, 'YYYY-MM-DD') AS fecha_nacimiento, edad, genero, correo, celular\nFROM vista_personas\nORDER BY numero_documento;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "gdpCredPostgres1",
+          "name": "PostgreSQL (usr_n8n)"
+        }
+      },
+      "executeOnce": true
+    },
+    {
+      "id": "7a2d3b20-0002-4b00-8000-000000000004",
+      "name": "Armar descripción",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Arma la descripción en texto de cada persona para la búsqueda semántica (sección 7.2 del diseño).\n// El mismo código está en los flujos «Indexar persona» y «Reindexar todo»: si cambias uno, cambia el otro.\n// indexado_en marca la versión del vector: la limpieza final deja solo la más reciente de cada persona.\nconst MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];\nconst indexadoEn = new Date().toISOString();\n\nreturn $input.all().map(({ json: p }) => {\n  const [anio, mes, dia] = p.fecha_nacimiento.split('-');\n  const fechaNacimiento = `${dia}-${MESES[Number(mes) - 1]}-${anio}`;\n  const nombreCompleto = [p.primer_nombre, p.segundo_nombre, p.apellidos].filter(Boolean).join(' ');\n  const texto =\n    `${nombreCompleto}. ${p.tipo_documento} número ${p.numero_documento}. ` +\n    `Fecha de nacimiento: ${fechaNacimiento}, ${p.edad} años. Género: ${p.genero}. ` +\n    `Correo: ${p.correo}. Celular: ${p.celular}.`;\n  return {\n    json: {\n      texto,\n      numero_documento: p.numero_documento,\n      tipo_documento: p.tipo_documento,\n      nombre_completo: nombreCompleto,\n      fecha_nacimiento: fechaNacimiento,\n      edad: String(p.edad),\n      genero: p.genero,\n      correo: p.correo,\n      celular: p.celular,\n      indexado_en: indexadoEn,\n    },\n  };\n});"
+      }
+    },
+    {
+      "id": "7a2d3b20-0002-4b00-8000-000000000005",
+      "name": "Guardar vector",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        880,
+        300
+      ],
+      "parameters": {
+        "mode": "insert",
+        "tableName": "persona_embedding",
+        "embeddingBatchSize": 100,
+        "options": {
+          "skipInitializationCheck": true,
+          "columnNames": {
+            "values": {
+              "idColumnName": "id",
+              "vectorColumnName": "embedding",
+              "contentColumnName": "text",
+              "metadataColumnName": "metadata"
+            }
+          }
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "gdpCredPostgres1",
+          "name": "PostgreSQL (usr_n8n)"
+        }
+      }
+    },
+    {
+      "id": "7a2d3b20-0002-4b00-8000-000000000006",
+      "name": "Cargar documento",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        980,
+        520
+      ],
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.texto }}",
+        "textSplittingMode": "simple",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "numero_documento",
+                "value": "={{ $json.numero_documento }}"
+              },
+              {
+                "name": "tipo_documento",
+                "value": "={{ $json.tipo_documento }}"
+              },
+              {
+                "name": "nombre_completo",
+                "value": "={{ $json.nombre_completo }}"
+              },
+              {
+                "name": "fecha_nacimiento",
+                "value": "={{ $json.fecha_nacimiento }}"
+              },
+              {
+                "name": "edad",
+                "value": "={{ $json.edad }}"
+              },
+              {
+                "name": "genero",
+                "value": "={{ $json.genero }}"
+              },
+              {
+                "name": "correo",
+                "value": "={{ $json.correo }}"
+              },
+              {
+                "name": "celular",
+                "value": "={{ $json.celular }}"
+              },
+              {
+                "name": "indexado_en",
+                "value": "={{ $json.indexado_en }}"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "7a2d3b20-0002-4b00-8000-000000000007",
+      "name": "Embeddings Gemini",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        820,
+        520
+      ],
+      "parameters": {
+        "modelName": "models/gemini-embedding-001"
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gdpCredGemini001",
+          "name": "Google Gemini"
+        }
+      }
+    },
+    {
+      "id": "7a2d3b20-0002-4b00-8000-000000000008",
+      "name": "Borrar versiones anteriores",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1120,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Los vectores nuevos ya están guardados: se borran los de antes de esta ejecución y, si un aviso\n-- de indexación llegó mientras tanto, la versión más vieja de esa persona.\n-- Si Gemini falla a mitad de camino, el flujo se detiene antes de llegar aquí y el índice anterior se conserva.\nDELETE FROM persona_embedding e\nWHERE e.metadata ->> 'indexado_en' IS NULL\n   OR e.metadata ->> 'indexado_en' < $1\n   OR EXISTS (\n        SELECT 1 FROM persona_embedding n\n        WHERE n.metadata ->> 'numero_documento' = e.metadata ->> 'numero_documento'\n          AND n.metadata ->> 'indexado_en' > e.metadata ->> 'indexado_en'\n      );",
+        "options": {
+          "queryReplacement": "={{ $('Armar descripción').first().json.indexado_en }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "gdpCredPostgres1",
+          "name": "PostgreSQL (usr_n8n)"
+        }
+      },
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "Ejecutar a mano": {
+      "main": [
+        [
+          {
+            "node": "Borrar vectores huérfanos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Borrar vectores huérfanos": {
+      "main": [
+        [
+          {
+            "node": "Leer personas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer personas": {
+      "main": [
+        [
+          {
+            "node": "Armar descripción",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar descripción": {
+      "main": [
+        [
+          {
+            "node": "Guardar vector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar vector": {
+      "main": [
+        [
+          {
+            "node": "Borrar versiones anteriores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cargar documento": {
+      "ai_document": [
+        [
+          {
+            "node": "Guardar vector",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Guardar vector",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "pinData": {},
+  "active": false
+}
