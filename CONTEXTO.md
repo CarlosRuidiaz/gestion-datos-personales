@@ -160,7 +160,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 | T14 | n8n en Compose, flujo de indexación por webhook y flujo de reindexación completa | n8n/ | T03 | Hecha | Claudia Elias | feat/T14-n8n-indexacion |
 | T15 | Flujo de chat: agente con herramientas SQL y vectorial, Gemini, memoria y registro en ms-log | n8n/ | T14, T10 | Pendiente | | |
 | T16 | Llamadas al webhook de indexación desde ms-crear, ms-modificar y ms-borrar | services/ | T06, T07, T09, T14 | Pendiente | | |
-| T17 | Script de datos de prueba (unas 20 personas ficticias) | database/ | T03 | Pendiente | | |
+| T17 | Script de datos de prueba (unas 20 personas ficticias) | database/ | T03 | En curso | Juan Fernández | feat/T17-datos-de-prueba |
 | T18 | Pruebas unitarias y de integración (Jest) | services/, libs/ | T06 a T10 | Pendiente | | |
 | T19 | Colección de Postman con todos los endpoints y permisos | tests/postman/ | T06 a T10 | Pendiente | | |
 | T20 | Guía de configuración inicial de n8n y prueba completa en un equipo limpio | docs/ | T15, T16, T17 | Pendiente | | |
