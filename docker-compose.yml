@@ -267,17 +267,26 @@ services:
       - traefik.http.routers.ms-consultar.entrypoints=web
       - traefik.http.services.ms-consultar.loadbalancer.server.port=3000
 
-  # --- T11: frontend (Nginx) ---------------------------------------------------
-  # frontend:
-  #   build: ./frontend
-  #   restart: unless-stopped
-  #   networks:
-  #     - frontal
-  #   labels:
-  #     - traefik.enable=true
-  #     - traefik.http.routers.frontend.rule=PathPrefix(`/`)
-  #     - traefik.http.routers.frontend.entrypoints=web
-  #     - traefik.http.services.frontend.loadbalancer.server.port=80
+  # --- T11: frontend (React servido con Nginx) ----------------------------------
+  # Atiende todo lo que no es /api. config.js se genera al arrancar con estas variables.
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    environment:
+      KEYCLOAK_PUBLIC_URL: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-gestion-personas}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-frontend}
+      N8N_CHAT_URL: ${N8N_CHAT_URL:-}
+    networks:
+      - frontal
+    labels:
+      - traefik.enable=true
+      # Nunca atiende /api: si un microservicio está apagado (ms-consultar), su ruta debe
+      # responder 404 desde Traefik y no la página de la aplicación con un 200.
+      - traefik.http.routers.frontend.rule=PathPrefix(`/`) && !PathPrefix(`/api`)
+      - traefik.http.routers.frontend.entrypoints=web
+      - traefik.http.routers.frontend.priority=1
+      - traefik.http.services.frontend.loadbalancer.server.port=80
 
   # --- T14: n8n ----------------------------------------------------------------
   # n8n:

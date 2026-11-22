@@ -3,7 +3,7 @@
 > Este es el documento de contexto del repositorio. Cualquier integrante del equipo, o la IA que use, debe leerlo completo antes de trabajar.
 > Uso: haz `git pull`, abre tu IA en la carpeta del repositorio y pídele «Lee CONTEXTO.md y dime en qué estado está el proyecto y qué me toca hacer».
 
-**Última actualización:** 2026-11-21, por Claudia Elias (tarea T10)
+**Última actualización:** 2026-11-21, por Carlos Ruidiaz (tarea T11)
 **Fase actual:** Fase 2 · Frentes paralelos (microservicios, frontend, n8n y calidad)
 
 ---
@@ -54,13 +54,13 @@ cp .env.example .env        # completar llaves y contraseñas (hoy son obligator
 docker compose --profile consultar up -d --build
 ```
 
-Qué arranca hoy: `gateway` (Traefik), `postgres` (PostgreSQL 16 con pgvector), `keycloak`, `ms-crear`, `ms-modificar`, `ms-borrar`, `ms-log` y, solo con `--profile consultar`, `ms-consultar`. Para apagar, encender o escalar Consultar: `docker compose stop ms-consultar`, `docker compose up -d ms-consultar` y `docker compose up -d --scale ms-consultar=3 ms-consultar`. Los demás servicios están comentados al final de `docker-compose.yml` y cada tarea agrega el suyo.
+Qué arranca hoy: `gateway` (Traefik), `postgres` (PostgreSQL 16 con pgvector), `keycloak`, `frontend` (la aplicación en <http://localhost>), `ms-crear`, `ms-modificar`, `ms-borrar`, `ms-log` y, solo con `--profile consultar`, `ms-consultar`. Para apagar, encender o escalar Consultar: `docker compose stop ms-consultar`, `docker compose up -d ms-consultar` y `docker compose up -d --scale ms-consultar=3 ms-consultar`. Los demás servicios están comentados al final de `docker-compose.yml` y cada tarea agrega el suyo.
 
 Cómo comprobar que funciona:
 
 ```bash
 docker compose ps                      # gateway, postgres y keycloak en estado healthy (keycloak tarda cerca de un minuto)
-curl -i http://localhost/              # 404 de Traefik: el gateway responde y aún no hay rutas
+curl -i http://localhost/              # 200: el gateway responde y entrega la aplicación (en el navegador redirige al login de Keycloak)
 docker compose exec -T postgres sh < database/verificar.sh   # esquema, restricciones y permisos: termina con TODO BIEN
 bash keycloak/verificar.sh             # realm, roles, usuarios de prueba y login con PKCE: termina con TODO BIEN (en Windows, con Git Bash)
 npm install && npm run test:common     # pruebas unitarias de libs/common (no necesitan contenedores)
@@ -70,6 +70,8 @@ bash services/ms-modificar/verificar.sh # ms-modificar de extremo a extremo (no 
 bash services/ms-borrar/verificar.sh    # ms-borrar de extremo a extremo (no necesita ms-crear ni ms-consultar)
 bash services/ms-consultar/verificar.sh # ms-consultar de extremo a extremo, incluido apagarlo, encenderlo y escalarlo
 bash services/ms-log/verificar.sh       # ms-log de extremo a extremo: filtros, paginación y registro de n8n con su llave
+bash frontend/verificar.sh              # frontend: Nginx, config.js, convivencia con /api y login con PKCE como lo hace keycloak-js
+(cd frontend && npm install && npm test)   # menú por rol y pantallas (Vitest, sin contenedores)
 ```
 
 Si ya habías arrancado el proyecto antes de T03, tu base de datos local no tiene las tablas: completa las `DB_PASSWORD_*` en tu `.env` y recrea el volumen con `docker compose down -v` antes de volver a arrancar.
@@ -107,8 +109,9 @@ Configuración inicial de n8n (una sola vez): pendiente de documentar en la tare
 - T08: `ms-consultar` en el perfil `consultar` de Compose, con `GET /api/consultar/personas/{documento}` para los dos roles (ficha completa con foto, log `CONSULTAR` en la misma transacción) y `GET /api/consultar/health` sin token (200, o 503 si no llega a la base de datos; con el contenedor apagado, Traefik responde 404). Tiene healthcheck en Compose, así que Traefik solo usa réplicas listas. `services/ms-consultar/verificar.sh` lo comprueba por el gateway, incluido apagarlo, encenderlo y escalarlo a tres réplicas (27 comprobaciones, sin fallos el 2026-11-17).
 - T09: `ms-borrar` en Compose, con `GET` y `DELETE /api/borrar/personas/{documento}`, solo para el administrador. La búsqueda previa es propia (no depende de ms-consultar), devuelve la foto para revisar antes de confirmar y queda en el log como `CONSULTAR` con el contexto «Búsqueda previa a un borrado». El borrado responde 204 y va con su log en una transacción; el detalle guarda los datos que tenía la persona, así su historial queda completo (CP-05). `services/ms-borrar/verificar.sh` lo comprueba por el gateway (34 comprobaciones, sin fallos el 2026-11-19). Falta el aviso a n8n (T16).
 - T10: `ms-log` en Compose, con `GET /api/log` para los dos roles (filtros opcionales `tipo`, `documento`, `desde` y `hasta`, que se combinan; fechas como días completos en hora de Bogotá; paginación con `pagina` y `tamano`; del más reciente al más antiguo) y `POST /api/log/consulta-nl` para n8n, protegido con la llave `N8N_LOG_API_KEY` en la cabecera `X-API-Key` (registra `CONSULTA_NL` con pregunta, respuesta y resultado). Los contratos exactos, para T13 y T15, están en `services/ms-log/README.md`. `services/ms-log/verificar.sh` lo comprueba por el gateway (49 comprobaciones, sin fallos el 2026-11-21), incluido CP-05 y CP-06.
+- T11: `frontend` (React 19, Vite 7, TypeScript 5.9) en Compose, servido con Nginx en <http://localhost>. Login con `keycloak-js` (código de autorización con PKCE, renovación automática del token, cierre de sesión), menú principal con solo las opciones del rol, rutas protegidas por rol, Consultar marcado «No disponible» si su health no responde, y el chat de n8n en una pestaña nueva (sin configurar hasta T15). Las cinco pantallas son marcadores que llenan T12 y T13; **quien haga T12 o T13 debe leer `frontend/README.md`**: tiene `pedirApi` para llamar a la API y dónde va cada pantalla. `frontend/verificar.sh` lo comprueba por el gateway (31 comprobaciones, sin fallos el 2026-11-21) y `npm test` dibuja el menú y las rutas por rol (18 pruebas). Probado en navegador hasta la página de login de Keycloak.
 
-**Todavía no existe:** frontend ni flujo de n8n. La base de datos está vacía: los datos de prueba son la tarea T17.
+**Todavía no existe:** las pantallas de crear, modificar, consultar, borrar y log (T12, T13) ni el flujo de n8n. La base de datos está vacía: los datos de prueba son la tarea T17.
 
 **En curso:** ver la columna Estado del tablero.
 
@@ -142,7 +145,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 | T08 | ms-consultar con endpoint health y perfil de Compose | services/ms-consultar/ | T05 | Hecha | Carlos Ruidiaz | feat/T08-ms-consultar |
 | T09 | ms-borrar (búsqueda previa + borrado) | services/ms-borrar/ | T05 | Hecha | Carlos Ruidiaz | feat/T09-ms-borrar |
 | T10 | ms-log: consulta con filtros y endpoint para n8n con llave de API | services/ms-log/ | T05 | Hecha | Claudia Elias | feat/T10-ms-log |
-| T11 | Frontend base: login con Keycloak, menú por rol, Dockerfile con Nginx | frontend/ | T04 | En curso | Carlos Ruidiaz | feat/T11-frontend-base |
+| T11 | Frontend base: login con Keycloak, menú por rol, Dockerfile con Nginx | frontend/ | T04 | Hecha | Carlos Ruidiaz | feat/T11-frontend-base |
 | T12 | Formulario de persona con validaciones (crear y modificar) | frontend/ | T11, T06, T07 | Pendiente | | |
 | T13 | Pantallas de consultar, borrar y log | frontend/ | T11, T08, T09, T10 | Pendiente | | |
 | T14 | n8n en Compose, flujo de indexación por webhook y flujo de reindexación completa | n8n/ | T03 | Pendiente | | |
@@ -177,6 +180,9 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 
 | Fecha | Decisión | Motivo | Quién |
 | --- | --- | --- | --- |
+| 2026-11-21 | La ruta del frontend en Traefik es `PathPrefix(/) && !PathPrefix(/api)`, con prioridad 1 | Si el frontend atendiera también `/api`, con ms-consultar apagado `/api/consultar/health` respondería 200 con la página de la aplicación, y el menú lo daría por disponible (rompería DD-04 y CP-07). Así, una ruta de un servicio apagado responde 404 desde Traefik | Carlos Ruidiaz |
+| 2026-11-21 | Frontend: React 19, Vite 7, React Router 7, TypeScript 5.9, Vitest 4 y `keycloak-js` 26 (el adaptador oficial de Keycloak, que hace PKCE y renueva el token). No se usan Vite 8, React Router 8 ni TypeScript 7 aunque ya existen. El frontend no entra en los workspaces de npm: tiene su propio `package-lock.json` y se construye con el contexto en `frontend/` | Las mismas razones de la decisión de versiones de los servicios: versiones mayores recientes con poco recorrido. El frontend no comparte código con `libs/common` | Carlos Ruidiaz |
+| 2026-11-21 | El frontend lee su configuración (URL de Keycloak, realm, cliente y `N8N_CHAT_URL`) de `/config.js`, que Nginx genera al arrancar desde `.env`, y no de variables de Vite fijadas al compilar | La misma imagen sirve en cualquier equipo o en Azure (T21) cambiando solo `.env`. Son datos públicos: el cliente `frontend` no tiene secreto | Carlos Ruidiaz |
 | 2026-11-21 | `POST /api/log/consulta-nl` no usa token de Keycloak: va con `@Publico()` y un guard propio que compara la cabecera `X-API-Key` con `N8N_LOG_API_KEY` (comparación de tiempo constante). Sin llave o con una distinta responde 401 y no se registra. Con la llave correcta, n8n queda como usuario `n8n`, así un 400 sí queda en el log como `CONSULTA_NL` `ERROR`. Cuerpo: `pregunta` (obligatoria, hasta 4000), `respuesta` (opcional, hasta 20000), `resultado` (`EXITO` o `ERROR`) y `detalle` (objeto opcional). Responde 201, o 500 si no pudo escribir. T15 depende de este contrato | El diseño solo dice «llave de API de n8n». El usuario `n8n` es «la cuenta de n8n» de la sección 6.2 del diseño | Claudia Elias |
 | 2026-11-21 | `GET /api/log` responde `{ total, pagina, tamano, registros }`, del más reciente al más antiguo, con `pagina` (desde 1) y `tamano` (por defecto 20, máximo 100). `desde` y `hasta` son días completos en la zona horaria `TZ` (`hasta` incluido), como `yyyy-mm-dd` o `dd-mmm-yyyy`; `desde` posterior a `hasta` responde 400. Cada registro trae `id` (texto), `fechaHora` (ISO 8601, UTC) y las demás columnas en camelCase. T13 depende de este contrato | La sección 8.2 del diseño pide una tabla paginada y no fija el formato | Claudia Elias |
 | 2026-11-21 | Consultar el log (`GET /api/log`) no se registra en el log, y la ruta no lleva `@Auditar` | La columna `tipo` no tiene un valor para esa operación y agregarlo obligaría a cambiar el esquema y recrear `pgdata` en todos los equipos. Registrarla como `CONSULTAR` mezclaría la revisión del log con las consultas de personas. El RF-08 se refiere a las transacciones sobre los datos personales | Claudia Elias |
