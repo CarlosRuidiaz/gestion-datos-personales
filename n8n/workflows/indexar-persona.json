@@ -1,0 +1,474 @@
+{
+  "id": "gdpIndexarPerson",
+  "name": "Indexar persona",
+  "nodes": [
+    {
+      "id": "6f1c2a10-0001-4a00-8000-000000000001",
+      "name": "Aviso de cambio",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "6f1c2a10-0001-4a00-8000-0000000000aa",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "indexar-persona",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "6f1c2a10-0001-4a00-8000-000000000002",
+      "name": "Validar aviso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Cuerpo que envían ms-crear, ms-modificar y ms-borrar (T16): { numeroDocumento, operacion }.\n// Solo se usa el documento: los datos de la persona se leen siempre de vista_personas.\nconst cuerpo = $input.first().json.body ?? {};\nconst numeroDocumento = String(cuerpo.numeroDocumento ?? '').trim();\nconst operacion = String(cuerpo.operacion ?? '').trim().toUpperCase();\nconst valido = /^[0-9]{1,10}$/.test(numeroDocumento) && ['CREAR', 'MODIFICAR', 'BORRAR'].includes(operacion);\nreturn [{ json: { valido, numeroDocumento, operacion } }];"
+      }
+    },
+    {
+      "id": "6f1c2a10-0001-4a00-8000-000000000003",
+      "name": "¿Aviso válido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6f1c2a10-0001-4a00-8000-000000000003-c",
+              "leftValue": "={{ $json.valido }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6f1c2a10-0001-4a00-8000-000000000004",
+      "name": "Responder 202",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        200
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { mensaje: \"Indexación en curso\", numeroDocumento: $json.numeroDocumento, operacion: $json.operacion } }}",
+        "options": {
+          "responseCode": 202
+        }
+      }
+    },
+    {
+      "id": "6f1c2a10-0001-4a00-8000-000000000005",
+      "name": "Responder 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        420
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { mensaje: \"El aviso debe traer numeroDocumento (hasta 10 dígitos) y operacion (CREAR, MODIFICAR o BORRAR)\" } }}",
+        "options": {
+          "responseCode": 400
+        }
+      }
+    },
+    {
+      "id": "6f1c2a10-0001-4a00-8000-000000000006",
+      "name": "Borrar vector anterior",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        880,
+        200
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM persona_embedding WHERE metadata ->> 'numero_documento' = $1;",
+        "options": {
+          "queryReplacement": "={{ $('Validar aviso').first().json.numeroDocumento }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "gdpCredPostgres1",
+          "name": "PostgreSQL (usr_n8n)"
+        }
+      }
+    },
+    {
+      "id": "6f1c2a10-0001-4a00-8000-000000000007",
+      "name": "Leer persona",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1100,
+        200
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT numero_documento, tipo_documento, primer_nombre, segundo_nombre, apellidos,\n       to_char(fecha_nacimiento, 'YYYY-MM-DD') AS fecha_nacimiento, edad, genero, correo, celular\nFROM vista_personas\nWHERE numero_documento = $1;",
+        "options": {
+          "queryReplacement": "={{ $('Validar aviso').first().json.numeroDocumento }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "gdpCredPostgres1",
+          "name": "PostgreSQL (usr_n8n)"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "6f1c2a10-0001-4a00-8000-000000000008",
+      "name": "¿Existe la persona?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6f1c2a10-0001-4a00-8000-000000000008-c",
+              "leftValue": "={{ $json.numero_documento }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6f1c2a10-0001-4a00-8000-000000000009",
+      "name": "Armar descripción",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        100
+      ],
+      "parameters": {
+        "jsCode": "// Arma la descripción en texto de cada persona para la búsqueda semántica (sección 7.2 del diseño).\n// El mismo código está en los flujos «Indexar persona» y «Reindexar todo»: si cambias uno, cambia el otro.\n// indexado_en marca la versión del vector: la limpieza final deja solo la más reciente de cada persona.\nconst MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];\nconst indexadoEn = new Date().toISOString();\n\nreturn $input.all().map(({ json: p }) => {\n  const [anio, mes, dia] = p.fecha_nacimiento.split('-');\n  const fechaNacimiento = `${dia}-${MESES[Number(mes) - 1]}-${anio}`;\n  const nombreCompleto = [p.primer_nombre, p.segundo_nombre, p.apellidos].filter(Boolean).join(' ');\n  const texto =\n    `${nombreCompleto}. ${p.tipo_documento} número ${p.numero_documento}. ` +\n    `Fecha de nacimiento: ${fechaNacimiento}, ${p.edad} años. Género: ${p.genero}. ` +\n    `Correo: ${p.correo}. Celular: ${p.celular}.`;\n  return {\n    json: {\n      texto,\n      numero_documento: p.numero_documento,\n      tipo_documento: p.tipo_documento,\n      nombre_completo: nombreCompleto,\n      fecha_nacimiento: fechaNacimiento,\n      edad: String(p.edad),\n      genero: p.genero,\n      correo: p.correo,\n      celular: p.celular,\n      indexado_en: indexadoEn,\n    },\n  };\n});"
+      }
+    },
+    {
+      "id": "6f1c2a10-0001-4a00-8000-00000000000a",
+      "name": "Guardar vector",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        1760,
+        100
+      ],
+      "parameters": {
+        "mode": "insert",
+        "tableName": "persona_embedding",
+        "embeddingBatchSize": 100,
+        "options": {
+          "skipInitializationCheck": true,
+          "columnNames": {
+            "values": {
+              "idColumnName": "id",
+              "vectorColumnName": "embedding",
+              "contentColumnName": "text",
+              "metadataColumnName": "metadata"
+            }
+          }
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "gdpCredPostgres1",
+          "name": "PostgreSQL (usr_n8n)"
+        }
+      }
+    },
+    {
+      "id": "6f1c2a10-0001-4a00-8000-00000000000b",
+      "name": "Cargar documento",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1860,
+        320
+      ],
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.texto }}",
+        "textSplittingMode": "simple",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "numero_documento",
+                "value": "={{ $json.numero_documento }}"
+              },
+              {
+                "name": "tipo_documento",
+                "value": "={{ $json.tipo_documento }}"
+              },
+              {
+                "name": "nombre_completo",
+                "value": "={{ $json.nombre_completo }}"
+              },
+              {
+                "name": "fecha_nacimiento",
+                "value": "={{ $json.fecha_nacimiento }}"
+              },
+              {
+                "name": "edad",
+                "value": "={{ $json.edad }}"
+              },
+              {
+                "name": "genero",
+                "value": "={{ $json.genero }}"
+              },
+              {
+                "name": "correo",
+                "value": "={{ $json.correo }}"
+              },
+              {
+                "name": "celular",
+                "value": "={{ $json.celular }}"
+              },
+              {
+                "name": "indexado_en",
+                "value": "={{ $json.indexado_en }}"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "6f1c2a10-0001-4a00-8000-00000000000c",
+      "name": "Embeddings Gemini",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1700,
+        320
+      ],
+      "parameters": {
+        "modelName": "models/gemini-embedding-001"
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gdpCredGemini001",
+          "name": "Google Gemini"
+        }
+      }
+    },
+    {
+      "id": "6f1c2a10-0001-4a00-8000-00000000000d",
+      "name": "Limpiar vectores sobrantes",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2100,
+        200
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- Deja como máximo un vector por persona: borra los de una persona que ya no existe\n-- y las versiones anteriores a la más reciente (dos avisos seguidos del mismo documento).\nDELETE FROM persona_embedding\nWHERE metadata ->> 'numero_documento' = $1\n  AND (\n    NOT EXISTS (SELECT 1 FROM vista_personas WHERE numero_documento = $1)\n    OR metadata ->> 'indexado_en' < (\n      SELECT max(metadata ->> 'indexado_en') FROM persona_embedding WHERE metadata ->> 'numero_documento' = $1\n    )\n  );",
+        "options": {
+          "queryReplacement": "={{ $('Validar aviso').first().json.numeroDocumento }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "gdpCredPostgres1",
+          "name": "PostgreSQL (usr_n8n)"
+        }
+      },
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "Aviso de cambio": {
+      "main": [
+        [
+          {
+            "node": "Validar aviso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar aviso": {
+      "main": [
+        [
+          {
+            "node": "¿Aviso válido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Aviso válido?": {
+      "main": [
+        [
+          {
+            "node": "Responder 202",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder 202": {
+      "main": [
+        [
+          {
+            "node": "Borrar vector anterior",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Borrar vector anterior": {
+      "main": [
+        [
+          {
+            "node": "Leer persona",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer persona": {
+      "main": [
+        [
+          {
+            "node": "¿Existe la persona?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Existe la persona?": {
+      "main": [
+        [
+          {
+            "node": "Armar descripción",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Limpiar vectores sobrantes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar descripción": {
+      "main": [
+        [
+          {
+            "node": "Guardar vector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar vector": {
+      "main": [
+        [
+          {
+            "node": "Limpiar vectores sobrantes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cargar documento": {
+      "ai_document": [
+        [
+          {
+            "node": "Guardar vector",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Guardar vector",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "pinData": {},
+  "active": false
+}

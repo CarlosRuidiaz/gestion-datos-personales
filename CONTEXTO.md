@@ -3,7 +3,7 @@
 > Este es el documento de contexto del repositorio. Cualquier integrante del equipo, o la IA que use, debe leerlo completo antes de trabajar.
 > Uso: haz `git pull`, abre tu IA en la carpeta del repositorio y pídele «Lee CONTEXTO.md y dime en qué estado está el proyecto y qué me toca hacer».
 
-**Última actualización:** 2026-11-21, por Carlos Ruidiaz (tarea T11)
+**Última actualización:** 2026-11-21, por Claudia Elias (tarea T14)
 **Fase actual:** Fase 2 · Frentes paralelos (microservicios, frontend, n8n y calidad)
 
 ---
@@ -50,16 +50,16 @@ Reglas de diseño que no se deben romper sin registrar una decisión en la secci
 Requisitos: Docker Desktop (con WSL2 en Windows) y Git. Los puertos 80 y 8080 deben estar libres. Para programar los microservicios hace falta además Node.js 22 o superior (se usa Node 24 en los contenedores).
 
 ```bash
-cp .env.example .env        # completar llaves y contraseñas (hoy son obligatorias POSTGRES_PASSWORD, las seis DB_PASSWORD_*, las tres de Keycloak y N8N_LOG_API_KEY)
+cp .env.example .env        # completar llaves y contraseñas (hoy son obligatorias POSTGRES_PASSWORD, las seis DB_PASSWORD_*, las tres de Keycloak, N8N_LOG_API_KEY y N8N_ENCRYPTION_KEY; para indexar hace falta GEMINI_API_KEY)
 docker compose --profile consultar up -d --build
 ```
 
-Qué arranca hoy: `gateway` (Traefik), `postgres` (PostgreSQL 16 con pgvector), `keycloak`, `frontend` (la aplicación en <http://localhost>), `ms-crear`, `ms-modificar`, `ms-borrar`, `ms-log` y, solo con `--profile consultar`, `ms-consultar`. Para apagar, encender o escalar Consultar: `docker compose stop ms-consultar`, `docker compose up -d ms-consultar` y `docker compose up -d --scale ms-consultar=3 ms-consultar`. Los demás servicios están comentados al final de `docker-compose.yml` y cada tarea agrega el suyo.
+Qué arranca hoy: `gateway` (Traefik), `postgres` (PostgreSQL 16 con pgvector), `keycloak`, `frontend` (la aplicación en <http://localhost>), `ms-crear`, `ms-modificar`, `ms-borrar`, `ms-log`, `n8n` (en <http://localhost:5678>) y, solo con `--profile consultar`, `ms-consultar`. Para apagar, encender o escalar Consultar: `docker compose stop ms-consultar`, `docker compose up -d ms-consultar` y `docker compose up -d --scale ms-consultar=3 ms-consultar`. Ya no queda ningún servicio comentado en `docker-compose.yml`.
 
 Cómo comprobar que funciona:
 
 ```bash
-docker compose ps                      # gateway, postgres y keycloak en estado healthy (keycloak tarda cerca de un minuto)
+docker compose ps                      # gateway, postgres, keycloak y n8n en estado healthy (keycloak tarda cerca de un minuto)
 curl -i http://localhost/              # 200: el gateway responde y entrega la aplicación (en el navegador redirige al login de Keycloak)
 docker compose exec -T postgres sh < database/verificar.sh   # esquema, restricciones y permisos: termina con TODO BIEN
 bash keycloak/verificar.sh             # realm, roles, usuarios de prueba y login con PKCE: termina con TODO BIEN (en Windows, con Git Bash)
@@ -72,6 +72,8 @@ bash services/ms-consultar/verificar.sh # ms-consultar de extremo a extremo, inc
 bash services/ms-log/verificar.sh       # ms-log de extremo a extremo: filtros, paginación y registro de n8n con su llave
 bash frontend/verificar.sh              # frontend: Nginx, config.js, convivencia con /api y login con PKCE como lo hace keycloak-js
 (cd frontend && npm install && npm test)   # menú por rol y pantallas (Vitest, sin contenedores)
+bash n8n/configurar.sh                  # una vez, y cada vez que cambien los flujos o una contraseña: credenciales, flujos y webhook activo
+bash n8n/verificar.sh                   # indexación por webhook, reindexación completa y permisos de usr_n8n, con Gemini real
 ```
 
 Si ya habías arrancado el proyecto antes de T03, tu base de datos local no tiene las tablas: completa las `DB_PASSWORD_*` en tu `.env` y recrea el volumen con `docker compose down -v` antes de volver a arrancar.
@@ -85,7 +87,7 @@ Notas:
 - Keycloak importa `keycloak/realm.json` solo si el realm no existe. Si cambia el archivo o una contraseña de los usuarios de prueba, hay que borrar el volumen `keycloak_data` (pasos en `keycloak/README.md`).
 - Para apagar todo: `docker compose --profile consultar down`.
 
-Configuración inicial de n8n (una sola vez): pendiente de documentar en la tarea T20.
+Configuración inicial de n8n (una sola vez): `bash n8n/configurar.sh` carga las credenciales de PostgreSQL y Gemini desde `.env`, importa los flujos de `n8n/workflows` y publica el de indexación. La cuenta de administrador se crea a mano en <http://localhost:5678>. Detalles, y cómo ejecutar la reindexación completa, en `n8n/README.md`. La guía completa en un equipo limpio es la tarea T20.
 
 ## 4. Convenciones
 
@@ -110,8 +112,9 @@ Configuración inicial de n8n (una sola vez): pendiente de documentar en la tare
 - T09: `ms-borrar` en Compose, con `GET` y `DELETE /api/borrar/personas/{documento}`, solo para el administrador. La búsqueda previa es propia (no depende de ms-consultar), devuelve la foto para revisar antes de confirmar y queda en el log como `CONSULTAR` con el contexto «Búsqueda previa a un borrado». El borrado responde 204 y va con su log en una transacción; el detalle guarda los datos que tenía la persona, así su historial queda completo (CP-05). `services/ms-borrar/verificar.sh` lo comprueba por el gateway (34 comprobaciones, sin fallos el 2026-11-19). Falta el aviso a n8n (T16).
 - T10: `ms-log` en Compose, con `GET /api/log` para los dos roles (filtros opcionales `tipo`, `documento`, `desde` y `hasta`, que se combinan; fechas como días completos en hora de Bogotá; paginación con `pagina` y `tamano`; del más reciente al más antiguo) y `POST /api/log/consulta-nl` para n8n, protegido con la llave `N8N_LOG_API_KEY` en la cabecera `X-API-Key` (registra `CONSULTA_NL` con pregunta, respuesta y resultado). Los contratos exactos, para T13 y T15, están en `services/ms-log/README.md`. `services/ms-log/verificar.sh` lo comprueba por el gateway (49 comprobaciones, sin fallos el 2026-11-21), incluido CP-05 y CP-06.
 - T11: `frontend` (React 19, Vite 7, TypeScript 5.9) en Compose, servido con Nginx en <http://localhost>. Login con `keycloak-js` (código de autorización con PKCE, renovación automática del token, cierre de sesión), menú principal con solo las opciones del rol, rutas protegidas por rol, Consultar marcado «No disponible» si su health no responde, y el chat de n8n en una pestaña nueva (sin configurar hasta T15). Las cinco pantallas son marcadores que llenan T12 y T13; **quien haga T12 o T13 debe leer `frontend/README.md`**: tiene `pedirApi` para llamar a la API y dónde va cada pantalla. `frontend/verificar.sh` lo comprueba por el gateway (31 comprobaciones, sin fallos el 2026-11-21) y `npm test` dibuja el menú y las rutas por rol (18 pruebas). Probado en navegador hasta la página de login de Keycloak.
+- T14: `n8n` 2.48.7 en Compose (puerto 5678, redes `frontal` y `datos`, healthcheck) con dos flujos en `n8n/workflows`. **Indexar persona** es el webhook `POST /webhook/indexar-persona` que llamarán ms-crear, ms-modificar y ms-borrar: responde 202 enseguida, lee la persona en `vista_personas`, arma su descripción, obtiene el embedding con Gemini (`gemini-embedding-001`, 3072 dimensiones) y deja un solo vector por persona en `persona_embedding` (o ninguno si fue borrada). **Reindexar todo**, de ejecución manual, reconstruye todos los vectores sin perder el índice anterior si Gemini falla. `n8n/configurar.sh` carga las credenciales desde `.env` sin escribirlas en el repositorio, importa y publica los flujos. **Quien haga T15 o T16 debe leer `n8n/README.md`**: tiene el contrato del webhook y cómo leer los vectores. `n8n/verificar.sh` lo comprueba con Gemini y PostgreSQL reales (44 comprobaciones, sin fallos el 2026-11-21), incluidos tres avisos simultáneos y los permisos de `usr_n8n` (CP-10).
 
-**Todavía no existe:** las pantallas de crear, modificar, consultar, borrar y log (T12, T13) ni el flujo de n8n. La base de datos está vacía: los datos de prueba son la tarea T17.
+**Todavía no existe:** las pantallas de crear, modificar, consultar, borrar y log (T12, T13) ni el flujo de chat de n8n (T15). Los microservicios todavía no avisan a n8n (T16). La base de datos está vacía: los datos de prueba son la tarea T17.
 
 **En curso:** ver la columna Estado del tablero.
 
@@ -119,6 +122,11 @@ Configuración inicial de n8n (una sola vez): pendiente de documentar en la tare
 - (ninguno)
 
 **Avisos para el equipo:**
+- 2026-11-21, T14 (Claudia Elias): cambió `docker-compose.yml` (sección 8, punto 4).
+  - `N8N_ENCRYPTION_KEY` ahora es obligatoria: sin ella `docker compose` no arranca. Después del pull, pon en tu `.env` una cadena aleatoria larga (en Git Bash: `openssl rand -hex 32`) y no la cambies después. Para indexar hace falta además `GEMINI_API_KEY` (gratis en Google AI Studio).
+  - Después de arrancar, ejecuta una vez `bash n8n/configurar.sh`. El puerto 5678 debe estar libre.
+  - La cuenta de administrador de n8n es local: cada quien crea la suya en <http://localhost:5678>, con el correo y la contraseña que quiera. No es una cuenta de n8n.io, no envía correos y se pierde con `docker compose down -v`. Detalles y una prueba manual paso a paso en `n8n/README.md`.
+  - T15 y T16 deben leer `n8n/README.md`, que tiene el contrato del webhook de indexación y cómo están guardados los vectores. Las decisiones están en la sección 7.
 - 2026-11-21, T10 (Claudia Elias): cambiaron `docker-compose.yml` y dos contratos de API (sección 8, punto 4).
   - `N8N_LOG_API_KEY` ahora es obligatoria: sin ella `docker compose` no arranca, ni siquiera para levantar solo `postgres`. Después del pull, pon en tu `.env` una cadena aleatoria larga (en Git Bash: `openssl rand -hex 32`). Cada equipo usa la suya; en T15 la misma llave se configura dentro de n8n.
   - T13 (pantalla del log) y T15 (registro de las consultas de n8n) deben leer `services/ms-log/README.md`, que tiene los contratos de `GET /api/log` y `POST /api/log/consulta-nl`. Las decisiones están en la sección 7.
@@ -148,7 +156,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 | T11 | Frontend base: login con Keycloak, menú por rol, Dockerfile con Nginx | frontend/ | T04 | Hecha | Carlos Ruidiaz | feat/T11-frontend-base |
 | T12 | Formulario de persona con validaciones (crear y modificar) | frontend/ | T11, T06, T07 | Pendiente | | |
 | T13 | Pantallas de consultar, borrar y log | frontend/ | T11, T08, T09, T10 | Pendiente | | |
-| T14 | n8n en Compose, flujo de indexación por webhook y flujo de reindexación completa | n8n/ | T03 | En curso | Claudia Elias | feat/T14-n8n-indexacion |
+| T14 | n8n en Compose, flujo de indexación por webhook y flujo de reindexación completa | n8n/ | T03 | Hecha | Claudia Elias | feat/T14-n8n-indexacion |
 | T15 | Flujo de chat: agente con herramientas SQL y vectorial, Gemini, memoria y registro en ms-log | n8n/ | T14, T10 | Pendiente | | |
 | T16 | Llamadas al webhook de indexación desde ms-crear, ms-modificar y ms-borrar | services/ | T06, T07, T09, T14 | Pendiente | | |
 | T17 | Script de datos de prueba (unas 20 personas ficticias) | database/ | T03 | Pendiente | | |
@@ -180,6 +188,11 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 
 | Fecha | Decisión | Motivo | Quién |
 | --- | --- | --- | --- |
+| 2026-11-21 | n8n fijado en `n8nio/n8n:2.48.7`, la versión que n8n marca como `stable`. No se usa n8n 3 aunque ya existe. Base interna de n8n en SQLite, dentro del volumen `n8n_data` | Mismo criterio de versiones de la sección 7: una mayor nueva tiene poco recorrido. SQLite basta para un solo equipo y no mezcla los datos de n8n con los de la aplicación | Claudia Elias |
+| 2026-11-21 | Contrato del webhook de indexación: `POST http://n8n:5678/webhook/indexar-persona` con `{ numeroDocumento, operacion }` (`CREAR`, `MODIFICAR` o `BORRAR`); responde 202 antes de indexar y 400 si el aviso no es válido. El flujo no usa los datos de la persona del aviso: la lee en `vista_personas` y, si no existe, borra su vector. El webhook no lleva llave. T16 depende de este contrato | Así el aviso no puede introducir datos falsos en el índice, repetirlo no hace daño y el orden de los avisos no importa. Sin llave, lo peor que puede hacer alguien desde el equipo es reindexar una persona que ya existe | Claudia Elias |
+| 2026-11-21 | Embeddings con `models/gemini-embedding-001` (3072 dimensiones), un vector por persona. `persona_embedding` sigue sin dimensión fija y sin índice vectorial: con unas 20 personas la búsqueda exacta es inmediata, y el índice HNSW de pgvector no admite más de 2000 dimensiones. T15 debe usar el mismo modelo para buscar | Es el modelo de embeddings de Gemini disponible en n8n y en el nivel gratuito. Sin cambios en `init.sql` no hay que recrear `pgdata` | Claudia Elias |
+| 2026-11-21 | La metadata de cada vector lleva `indexado_en`. Al terminar, el flujo de indexación borra las versiones anteriores del mismo documento, y la reindexación completa borra el índice viejo solo después de guardar el nuevo | Dos avisos casi simultáneos del mismo documento (crear y modificar enseguida) podían dejar dos vectores. Si Gemini falla a mitad de una reindexación, el índice anterior se conserva | Claudia Elias |
+| 2026-11-21 | `n8n/configurar.sh` crea las credenciales de PostgreSQL (`usr_n8n`) y Gemini desde `.env` con la CLI de n8n, con ids fijos (`gdpCredPostgres1`, `gdpCredGemini001`) que los flujos exportados usan. También importa y publica los flujos. La cuenta de administrador de n8n sigue siendo manual | El diseño pide cargar credenciales e importar flujos a mano. Con el script esos pasos no tienen errores de tecleo, los flujos funcionan al importarlos y las pruebas se pueden automatizar. Los valores pasan al contenedor por la entrada estándar y n8n los guarda cifrados: no quedan en el repositorio | Claudia Elias |
 | 2026-11-21 | La ruta del frontend en Traefik es `PathPrefix(/) && !PathPrefix(/api)`, con prioridad 1 | Si el frontend atendiera también `/api`, con ms-consultar apagado `/api/consultar/health` respondería 200 con la página de la aplicación, y el menú lo daría por disponible (rompería DD-04 y CP-07). Así, una ruta de un servicio apagado responde 404 desde Traefik | Carlos Ruidiaz |
 | 2026-11-21 | Frontend: React 19, Vite 7, React Router 7, TypeScript 5.9, Vitest 4 y `keycloak-js` 26 (el adaptador oficial de Keycloak, que hace PKCE y renueva el token). No se usan Vite 8, React Router 8 ni TypeScript 7 aunque ya existen. El frontend no entra en los workspaces de npm: tiene su propio `package-lock.json` y se construye con el contexto en `frontend/` | Las mismas razones de la decisión de versiones de los servicios: versiones mayores recientes con poco recorrido. El frontend no comparte código con `libs/common` | Carlos Ruidiaz |
 | 2026-11-21 | El frontend lee su configuración (URL de Keycloak, realm, cliente y `N8N_CHAT_URL`) de `/config.js`, que Nginx genera al arrancar desde `.env`, y no de variables de Vite fijadas al compilar | La misma imagen sirve en cualquier equipo o en Azure (T21) cambiando solo `.env`. Son datos públicos: el cliente `frontend` no tiene secreto | Carlos Ruidiaz |
