@@ -53,6 +53,12 @@ MSYS_NO_PATHCONV=1 docker compose exec -T -e N8N_RUNNERS_BROKER_PORT=5690 n8n n8
 
 Mientras T16 no esté hecha, crear una persona desde la aplicación no avisa a n8n: el aviso se envía a mano. Desde PowerShell, en la raíz del repositorio:
 
+0. Configura UTF-8 en la ventana de PowerShell (hay que hacerlo en cada ventana nueva). Windows PowerShell 5.1 pasa el texto a `docker` en ASCII, y sin esta línea la «é» de `Cédula` llega como `?`: PostgreSQL rechaza la fila con `violates check constraint "persona_tipo_doc_chk"`. La segunda parte hace que las tildes de las respuestas se vean bien:
+
+   ```powershell
+   $OutputEncoding = [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+   ```
+
 1. Crea una persona de prueba en PostgreSQL. Usa siempre documentos que empiecen por `99999999`, que son los que limpian los scripts de verificación:
 
    ```powershell
