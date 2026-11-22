@@ -4,12 +4,14 @@ import type { Usuario } from './auth/sesion';
 import { Marco } from './componentes/Marco';
 import { RutaConRol } from './componentes/RutaConRol';
 import { Consultar } from './paginas/Consultar';
+import { CrearPersona } from './paginas/CrearPersona';
 import { EnConstruccion } from './paginas/EnConstruccion';
 import { Menu } from './paginas/Menu';
+import { ModificarPersona } from './paginas/ModificarPersona';
 
 /**
  * Rutas de la aplicación. Cada opción del menú tiene la suya y queda protegida por rol.
- * T12 reemplaza las páginas de crear y modificar, y T13 las de consultar, borrar y log.
+ * Crear y modificar son de T12; T13 reemplaza las páginas de consultar, borrar y log.
  */
 export function App({ usuario }: { usuario: Usuario }) {
   return (
@@ -22,7 +24,7 @@ export function App({ usuario }: { usuario: Usuario }) {
               path="crear"
               element={
                 <RutaConRol ruta="/crear">
-                  <EnConstruccion titulo="Crear personas" tarea="T12" />
+                  <CrearPersona />
                 </RutaConRol>
               }
             />
@@ -30,7 +32,7 @@ export function App({ usuario }: { usuario: Usuario }) {
               path="modificar"
               element={
                 <RutaConRol ruta="/modificar">
-                  <EnConstruccion titulo="Modificar datos personales" tarea="T12" />
+                  <ModificarPersona />
                 </RutaConRol>
               }
             />
