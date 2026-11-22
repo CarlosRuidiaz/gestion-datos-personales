@@ -125,6 +125,7 @@ Configuración inicial de n8n (una sola vez): `bash n8n/configurar.sh` carga las
 - 2026-11-21, T14 (Claudia Elias): cambió `docker-compose.yml` (sección 8, punto 4).
   - `N8N_ENCRYPTION_KEY` ahora es obligatoria: sin ella `docker compose` no arranca. Después del pull, pon en tu `.env` una cadena aleatoria larga (en Git Bash: `openssl rand -hex 32`) y no la cambies después. Para indexar hace falta además `GEMINI_API_KEY` (gratis en Google AI Studio).
   - Después de arrancar, ejecuta una vez `bash n8n/configurar.sh`. El puerto 5678 debe estar libre.
+  - La cuenta de administrador de n8n es local: cada quien crea la suya en <http://localhost:5678>, con el correo y la contraseña que quiera. No es una cuenta de n8n.io, no envía correos y se pierde con `docker compose down -v`. Detalles y una prueba manual paso a paso en `n8n/README.md`.
   - T15 y T16 deben leer `n8n/README.md`, que tiene el contrato del webhook de indexación y cómo están guardados los vectores. Las decisiones están en la sección 7.
 - 2026-11-21, T10 (Claudia Elias): cambiaron `docker-compose.yml` y dos contratos de API (sección 8, punto 4).
   - `N8N_LOG_API_KEY` ahora es obligatoria: sin ella `docker compose` no arranca, ni siquiera para levantar solo `postgres`. Después del pull, pon en tu `.env` una cadena aleatoria larga (en Git Bash: `openssl rand -hex 32`). Cada equipo usa la suya; en T15 la misma llave se configura dentro de n8n.

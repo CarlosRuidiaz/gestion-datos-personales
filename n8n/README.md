@@ -30,7 +30,16 @@ bash n8n/verificar.sh          # termina con TODO BIEN
 
 Los valores llegan al contenedor por la entrada estándar y n8n los guarda cifrados con `N8N_ENCRYPTION_KEY` en el volumen `n8n_data`. Ni los flujos exportados ni el repositorio tienen contraseñas o llaves; `verificar.sh` lo comprueba. Si cambias una contraseña en `.env`, vuelve a ejecutar `configurar.sh`. No cambies `N8N_ENCRYPTION_KEY` después de configurar: n8n dejaría de poder leer sus credenciales y habría que borrar el volumen `n8n_data`.
 
-La cuenta de administrador de n8n no la crea el script: se crea en <http://localhost:5678> la primera vez que se abre. Los flujos importados aparecen en esa cuenta.
+### La cuenta de administrador de n8n
+
+La primera vez que abres <http://localhost:5678>, n8n pide crear la cuenta de administrador (*owner*). `configurar.sh` no la crea porque lleva una contraseña personal. Lo que hay que saber:
+
+- **Es local.** Vive solo en tu volumen `n8n_data`, no es una cuenta de n8n.io ni de ningún servicio en internet, y cada integrante crea la suya en su equipo. No se comparte ni se sube al repositorio.
+- **El correo solo sirve para iniciar sesión.** n8n no envía ningún correo de confirmación (no tiene correo configurado). Puedes usar tu correo institucional u otro que recuerdes. La contraseña pide al menos 8 caracteres, con un número y una mayúscula.
+- Después del registro n8n puede ofrecer una encuesta y una licencia gratuita por correo: las dos son opcionales y se pueden saltar.
+- Si olvidas la contraseña: `docker compose exec n8n n8n user-management:reset` borra la cuenta (los flujos y las credenciales se conservan) y vuelves a crearla en el navegador.
+- Los flujos importados por `configurar.sh` aparecen en esa cuenta, en *Overview*. Para T15, el chat de n8n se protege con esta autenticación (sección 7.1 del diseño).
+- Con `docker compose down -v` se borra el volumen `n8n_data` y con él la cuenta, las credenciales y los flujos: hay que volver a crear la cuenta y ejecutar `configurar.sh`.
 
 Para ejecutar la reindexación completa: ábrela en n8n y pulsa *Execute workflow*, o desde la terminal:
 
@@ -39,6 +48,38 @@ MSYS_NO_PATHCONV=1 docker compose exec -T -e N8N_RUNNERS_BROKER_PORT=5690 n8n n8
 ```
 
 (El n8n que está corriendo ya ocupa el puerto 5679 de su task runner; la ejecución por línea de comandos necesita otro.) Hay que ejecutarla después de cargar los datos de prueba (T17) y cada vez que el índice quede desactualizado, por ejemplo si n8n estuvo apagado mientras se creaban personas.
+
+## Cómo probarlo a mano
+
+Mientras T16 no esté hecha, crear una persona desde la aplicación no avisa a n8n: el aviso se envía a mano. Desde PowerShell, en la raíz del repositorio:
+
+1. Crea una persona de prueba en PostgreSQL. Usa siempre documentos que empiecen por `99999999`, que son los que limpian los scripts de verificación:
+
+   ```powershell
+   "INSERT INTO persona (numero_documento, tipo_documento, primer_nombre, apellidos, fecha_nacimiento, genero, correo, celular) VALUES ('9999999981', 'Cédula', 'Marta', 'Rojas Vega', '1995-08-12', 'Femenino', 'marta.prueba@ejemplo.com', '3011112233');" | docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+   ```
+
+2. Envía el aviso, como lo hará ms-crear. Debe responder con «Indexación en curso»:
+
+   ```powershell
+   Invoke-RestMethod -Method Post -Uri http://localhost:5678/webhook/indexar-persona -ContentType 'application/json' -Body '{"numeroDocumento":"9999999981","operacion":"CREAR"}'
+   ```
+
+3. Revisa el vector guardado (debe salir el texto de la persona y `3072`):
+
+   ```powershell
+   "SELECT text, vector_dims(embedding) FROM persona_embedding WHERE metadata->>'numero_documento' = '9999999981';" | docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+   ```
+
+4. En n8n, abre **Indexar persona** y la pestaña *Executions*: cada aviso es una ejecución, y en cada nodo se ven los datos que entraron y salieron. Si algo falla, el nodo en rojo dice por qué (por ejemplo, una llave de Gemini inválida).
+5. Abre **Reindexar todo** y pulsa *Execute workflow*: debe terminar en verde y dejar un vector por persona.
+6. Limpia lo que creaste:
+
+   ```powershell
+   "DELETE FROM persona WHERE numero_documento LIKE '99999999%'; DELETE FROM persona_embedding WHERE metadata->>'numero_documento' LIKE '99999999%';" | docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+   ```
+
+n8n guarda cada ejecución, con los datos de la persona, en `n8n_data`. Por eso, como en todo el proyecto, solo se usan datos ficticios.
 
 ## Contrato del webhook de indexación (para T16)
 
