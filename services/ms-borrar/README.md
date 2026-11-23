@@ -28,7 +28,7 @@ Debe terminar con `TODO BIEN`. Inserta sus propias personas de prueba en la base
 ## Pendiente en otras tareas
 
 - (T16 hecha: después de borrar avisa a n8n con `BORRAR`, para que quite el vector de la persona. Ver `libs/common/README.md`, sección «Aviso a n8n».)
-- **T13:** la pantalla de borrar del frontend, con la confirmación.
+- (T13 hecha: la pantalla de borrar del frontend, con la confirmación, está en `frontend/src/paginas/BorrarPersona.tsx`.)
 - **T18:** pruebas unitarias con Jest.
 
 ## Archivos

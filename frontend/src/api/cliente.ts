@@ -28,7 +28,8 @@ const MENSAJES: Record<number, string> = {
 /**
  * Llama a la API por el gateway con el token de la sesión. Devuelve el cuerpo JSON
  * (o `undefined` si la respuesta no tiene cuerpo, como el 204 de borrar) y lanza
- * `ErrorApi` si la respuesta no es exitosa. Con un 401 vuelve al login.
+ * `ErrorApi` si la respuesta no es exitosa. Con un 401 vuelve al login. Si el servicio está apagado
+ * (Traefik responde 404 o 502 sin cuerpo JSON), lanza `ErrorApi` con estado 503.
  *
  *   const persona = await pedirApi<Persona>('/api/consultar/personas/1043123456');
  *   await pedirApi('/api/crear/personas', { method: 'POST', body: formData });
@@ -55,6 +56,11 @@ export async function pedirApi<T = unknown>(ruta: string, opciones: RequestInit 
     cuerpo = undefined; // Por ejemplo, la página de error de Traefik cuando un servicio está apagado.
   }
   if (!respuesta.ok) {
+    // Un 404 o 502 sin cuerpo JSON no viene del microservicio sino de Traefik: el servicio está
+    // apagado. Se informa como 503, para no confundirlo con «no hay una persona con ese documento».
+    if (cuerpo === undefined && (respuesta.status === 404 || respuesta.status === 502)) {
+      throw new ErrorApi(503, MENSAJES[503]);
+    }
     const datos = (cuerpo ?? {}) as { message?: unknown; errores?: ErrorDeCampo[] };
     const mensaje =
       typeof datos.message === 'string'
