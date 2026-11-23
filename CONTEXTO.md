@@ -163,8 +163,8 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 | T15 | Flujo de chat: agente con herramientas SQL y vectorial, Gemini, memoria y registro en ms-log | n8n/ | T14, T10 | Pendiente | | |
 | T16 | Llamadas al webhook de indexación desde ms-crear, ms-modificar y ms-borrar | services/ | T06, T07, T09, T14 | Pendiente | | |
 | T17 | Script de datos de prueba (unas 20 personas ficticias) | database/ | T03 | Hecha | Juan Fernández | feat/T17-datos-de-prueba |
-| T18 | Pruebas unitarias y de integración (Jest) | services/, libs/ | T06 a T10 | Pendiente | | |
-| T19 | Colección de Postman con todos los endpoints y permisos | tests/postman/ | T06 a T10 | Pendiente | | |
+| T18 | Pruebas unitarias y de integración (Jest) | services/, libs/ | T06 a T10 | En curso | Juan Fernández | feat/T18-pruebas-jest |
+| T19 | Colección de Postman con todos los endpoints y permisos | tests/postman/ | T06 a T10 | En curso | Juan Fernández | feat/T19-coleccion-postman |
 | T20 | Guía de configuración inicial de n8n y prueba completa en un equipo limpio | docs/ | T15, T16, T17 | Pendiente | | |
 | T21 | Opcional: despliegue en Azure for Students | | T20 | Pendiente | | |
 
