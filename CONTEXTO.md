@@ -162,7 +162,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 | T10 | ms-log: consulta con filtros y endpoint para n8n con llave de API | services/ms-log/ | T05 | Hecha | Claudia Elias | feat/T10-ms-log |
 | T11 | Frontend base: login con Keycloak, menú por rol, Dockerfile con Nginx | frontend/ | T04 | Hecha | Carlos Ruidiaz | feat/T11-frontend-base |
 | T12 | Formulario de persona con validaciones (crear y modificar) | frontend/ | T11, T06, T07 | Hecha | Claudia Elias | feat/T12-formulario-persona |
-| T13 | Pantallas de consultar, borrar y log | frontend/ | T11, T08, T09, T10 | Pendiente | | |
+| T13 | Pantallas de consultar, borrar y log | frontend/ | T11, T08, T09, T10 | En curso | Claudia Elias | feat/T13-consultar-borrar-log |
 | T14 | n8n en Compose, flujo de indexación por webhook y flujo de reindexación completa | n8n/ | T03 | Hecha | Claudia Elias | feat/T14-n8n-indexacion |
 | T15 | Flujo de chat: agente con herramientas SQL y vectorial, Gemini, memoria y registro en ms-log | n8n/ | T14, T10 | Pendiente | | |
 | T16 | Llamadas al webhook de indexación desde ms-crear, ms-modificar y ms-borrar | services/ | T06, T07, T09, T14 | Hecha | Carlos Ruidiaz | feat/T16-aviso-indexacion |
