@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import {
   aPersonaRespuesta,
   AuditoriaService,
+  AvisoIndexacionService,
   CONTEXTO_PREVIO_BORRAR,
   datosParaLog,
   Persona,
@@ -20,6 +21,7 @@ export class PersonasService {
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly auditoria: AuditoriaService,
+    private readonly indexacion: AvisoIndexacionService,
   ) {}
 
   /**
@@ -69,5 +71,7 @@ export class PersonasService {
         detalle: { anterior: datosParaLog(persona), teniaFoto: persona.foto !== null },
       });
     });
+    // Ya confirmado el borrado: n8n quita el vector de la persona. No se espera la respuesta.
+    void this.indexacion.avisar(documento, TipoTransaccion.BORRAR);
   }
 }

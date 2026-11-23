@@ -51,7 +51,7 @@ MSYS_NO_PATHCONV=1 docker compose exec -T -e N8N_RUNNERS_BROKER_PORT=5690 n8n n8
 
 ## Cómo probarlo a mano
 
-Mientras T16 no esté hecha, crear una persona desde la aplicación no avisa a n8n: el aviso se envía a mano. Desde PowerShell, en la raíz del repositorio:
+Desde T16, crear, modificar o borrar una persona en la aplicación ya avisa a n8n solo (lo comprueba `services/verificar-indexacion.sh`). Para probar el flujo sin la aplicación, el aviso se envía a mano. Desde PowerShell, en la raíz del repositorio:
 
 0. Configura UTF-8 en la ventana de PowerShell (hay que hacerlo en cada ventana nueva). Windows PowerShell 5.1 pasa el texto a `docker` en ASCII, y sin esta línea la «é» de `Cédula` llega como `?`: PostgreSQL rechaza la fila con `violates check constraint "persona_tipo_doc_chk"`. La segunda parte hace que las tildes de las respuestas se vean bien:
 

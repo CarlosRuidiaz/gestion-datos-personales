@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import {
   aPersonaRespuesta,
   AuditoriaService,
+  AvisoIndexacionService,
   CONTEXTO_PREVIO_MODIFICAR,
   datosParaLog,
   FotoValidada,
@@ -35,6 +36,7 @@ export class PersonasService {
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly auditoria: AuditoriaService,
+    private readonly indexacion: AvisoIndexacionService,
   ) {}
 
   /**
@@ -68,7 +70,7 @@ export class PersonasService {
     foto: FotoValidada | null,
     usuario: UsuarioAutenticado,
   ): Promise<PersonaRespuesta> {
-    return this.dataSource.transaction(async (manager) => {
+    const { respuesta, cambiaronDatos } = await this.dataSource.transaction(async (manager) => {
       // Bloquea la fila: dos modificaciones simultáneas se aplican una después de la otra.
       const persona = await manager.findOne(Persona, {
         where: { numeroDocumento: documento },
@@ -130,7 +132,14 @@ export class PersonasService {
       });
 
       const actualizada = await manager.findOneByOrFail(Persona, { numeroDocumento: documento });
-      return aPersonaRespuesta(actualizada);
+      return { respuesta: aPersonaRespuesta(actualizada), cambiaronDatos: Object.keys(nuevo).length > 0 };
     });
+
+    // Ya confirmada la modificación, n8n actualiza el vector, sin que se espere su respuesta.
+    // Solo si cambió algún dato: la foto no forma parte del texto indexado (n8n/README.md).
+    if (cambiaronDatos) {
+      void this.indexacion.avisar(documento, TipoTransaccion.MODIFICAR);
+    }
+    return respuesta;
   }
 }

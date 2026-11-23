@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { FiltroAuditoria } from './auditoria/auditoria.filter';
 import { AuditoriaService } from './auditoria/auditoria.service';
 import { configuracionBaseDeDatos } from './entorno';
+import { AvisoIndexacionService } from './indexacion/aviso-indexacion.service';
 import { LogTransaccion } from './log/log-transaccion.entity';
 import { Persona } from './persona/persona.entity';
 import { JwtGuard } from './seguridad/jwt.guard';
@@ -17,7 +18,8 @@ import { crearValidationPipe } from './validacion/validacion';
  * - el guard JWT con roles, en todas las rutas;
  * - la validación de los DTO, con la lista de campos y mensajes;
  * - el filtro que registra en el log las peticiones rechazadas;
- * - AuditoriaService, para registrar las operaciones exitosas dentro de su transacción.
+ * - AuditoriaService, para registrar las operaciones exitosas dentro de su transacción;
+ * - AvisoIndexacionService, para avisar a n8n después del commit (crear, modificar y borrar).
  */
 @Global()
 @Module({})
@@ -39,11 +41,12 @@ export class ComunModule {
       providers: [
         VerificadorToken,
         AuditoriaService,
+        AvisoIndexacionService,
         { provide: APP_GUARD, useClass: JwtGuard },
         { provide: APP_PIPE, useFactory: crearValidationPipe },
         { provide: APP_FILTER, useClass: FiltroAuditoria },
       ],
-      exports: [VerificadorToken, AuditoriaService],
+      exports: [VerificadorToken, AuditoriaService, AvisoIndexacionService],
     };
   }
 }
