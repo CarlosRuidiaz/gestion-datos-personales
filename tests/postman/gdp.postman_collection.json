@@ -1,0 +1,2605 @@
+{
+  "info": {
+    "name": "Gestión de Datos Personales · API (T19)",
+    "description": "Todos los endpoints de los cinco microservicios, por el gateway, con tokens reales de Keycloak.\n\nCada petición lleva pruebas (pestaña Tests). Correr la colección completa con el Collection Runner, en orden: crea, modifica, consulta, borra y revisa el log de la persona ficticia `{{docPrueba}}`, y al empezar borra la que haya quedado de una corrida anterior.\n\nAntes de correrla: importar también el entorno `gdp-local.postman_environment.json`, elegirlo y llenar las contraseñas y la llave de API desde `.env` (ver tests/postman/README.md).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Pide (y renueva) los tokens de admin.prueba y consultor.prueba con el cliente `pruebas` de Keycloak.",
+          "// Postman espera a que termine antes de enviar la petición. Los tokens duran 5 minutos.",
+          "function pedirToken(rol, usuarioVar, claveVar) {",
+          "    const vigente = pm.variables.get('token_' + rol) && Date.now() < Number(pm.variables.get('exp_' + rol) || 0);",
+          "    if (vigente) return;",
+          "    const clave = pm.variables.get(claveVar);",
+          "    if (!clave) { console.error('Falta ' + claveVar + ' en el entorno de Postman (ver tests/postman/README.md)'); return; }",
+          "    pm.sendRequest({",
+          "        url: pm.variables.get('keycloakUrl') + '/realms/gestion-personas/protocol/openid-connect/token',",
+          "        method: 'POST',",
+          "        header: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+          "        body: { mode: 'urlencoded', urlencoded: [",
+          "            { key: 'grant_type', value: 'password' },",
+          "            { key: 'client_id', value: 'pruebas' },",
+          "            { key: 'username', value: pm.variables.get(usuarioVar) },",
+          "            { key: 'password', value: clave }",
+          "        ] }",
+          "    }, (error, res) => {",
+          "        if (error || res.code !== 200) { console.error('No se pudo obtener el token de ' + rol, error || res.text()); return; }",
+          "        const t = res.json();",
+          "        pm.collectionVariables.set('token_' + rol, t.access_token);",
+          "        pm.collectionVariables.set('exp_' + rol, String(Date.now() + (t.expires_in - 30) * 1000));",
+          "    });",
+          "}",
+          "pedirToken('admin', 'usuarioAdmin', 'passwordAdmin');",
+          "pedirToken('consultor', 'usuarioConsultor', 'passwordConsultor');"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost"
+    },
+    {
+      "key": "keycloakUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "usuarioAdmin",
+      "value": "admin.prueba"
+    },
+    {
+      "key": "usuarioConsultor",
+      "value": "consultor.prueba"
+    },
+    {
+      "key": "passwordAdmin",
+      "value": ""
+    },
+    {
+      "key": "passwordConsultor",
+      "value": ""
+    },
+    {
+      "key": "n8nApiKey",
+      "value": ""
+    },
+    {
+      "key": "docPrueba",
+      "value": "9999980001"
+    },
+    {
+      "key": "docInexistente",
+      "value": "9999980999"
+    },
+    {
+      "key": "docInvalido",
+      "value": "99ABC"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Autenticación y preparación",
+      "item": [
+        {
+          "name": "Login con contraseña incorrecta: Keycloak no emite token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": {
+              "raw": "{{keycloakUrl}}/realms/gestion-personas/protocol/openid-connect/token",
+              "host": [
+                "{{keycloakUrl}}"
+              ],
+              "path": [
+                "realms",
+                "gestion-personas",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "client_id",
+                  "value": "pruebas"
+                },
+                {
+                  "key": "username",
+                  "value": "{{usuarioAdmin}}"
+                },
+                {
+                  "key": "password",
+                  "value": "contraseña-incorrecta"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Keycloak rechaza las credenciales inválidas (400 o 401)\", () => pm.expect(pm.response.code).to.be.oneOf([400, 401]));",
+                  "pm.test(\"el error es invalid_grant\", () => pm.expect(pm.response.json().error).to.equal(\"invalid_grant\"));",
+                  "pm.test(\"no entrega access_token\", () => pm.expect(pm.response.json().access_token).to.be.undefined);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Limpiar: borrar la persona de prueba si quedó de otra corrida",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrar/personas/{{docPrueba}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrar",
+                "personas",
+                "{{docPrueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 204 (existía) o 404 (no existía)\", () => pm.expect([204, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Los tokens se piden solos con el cliente `pruebas` de Keycloak (script de la colección) y se renuevan antes de que venzan sus 5 minutos."
+    },
+    {
+      "name": "01 ms-crear · POST /api/crear/personas",
+      "item": [
+        {
+          "name": "CP-08 Sin token → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/crear/personas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "crear",
+                "personas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoDocumento\": \"Cédula\",\n  \"numeroDocumento\": \"{{docPrueba}}\",\n  \"primerNombre\": \"Prueba\",\n  \"segundoNombre\": \"Postman\",\n  \"apellidos\": \"Colección Diecinueve\",\n  \"fechaNacimiento\": \"05-mar-2001\",\n  \"genero\": \"No binario\",\n  \"correo\": \"postman@example.com\",\n  \"celular\": \"3001112233\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-08 Consultor → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/crear/personas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "crear",
+                "personas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoDocumento\": \"Cédula\",\n  \"numeroDocumento\": \"{{docPrueba}}\",\n  \"primerNombre\": \"Prueba\",\n  \"segundoNombre\": \"Postman\",\n  \"apellidos\": \"Colección Diecinueve\",\n  \"fechaNacimiento\": \"05-mar-2001\",\n  \"genero\": \"No binario\",\n  \"correo\": \"postman@example.com\",\n  \"celular\": \"3001112233\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_consultor}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-03 Campos inválidos → 400 con el campo y su mensaje",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/crear/personas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "crear",
+                "personas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoDocumento\": \"Cédula\",\n  \"numeroDocumento\": \"{{docPrueba}}\",\n  \"primerNombre\": \"Ana3\",\n  \"segundoNombre\": \"Postman\",\n  \"apellidos\": \"Colección Diecinueve\",\n  \"fechaNacimiento\": \"05-mar-2001\",\n  \"genero\": \"No binario\",\n  \"correo\": \"sin-arroba\",\n  \"celular\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"informa el campo celular\", () => {\n    const errores = pm.response.json().errores || [];\n    pm.expect(errores.map(e => e.campo)).to.include(\"celular\");\n});",
+                  "pm.test(\"informa el campo correo\", () => {\n    const errores = pm.response.json().errores || [];\n    pm.expect(errores.map(e => e.campo)).to.include(\"correo\");\n});",
+                  "pm.test(\"informa el campo primerNombre\", () => {\n    const errores = pm.response.json().errores || [];\n    pm.expect(errores.map(e => e.campo)).to.include(\"primerNombre\");\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-03 Fecha de nacimiento futura → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/crear/personas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "crear",
+                "personas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoDocumento\": \"Cédula\",\n  \"numeroDocumento\": \"{{docPrueba}}\",\n  \"primerNombre\": \"Prueba\",\n  \"segundoNombre\": \"Postman\",\n  \"apellidos\": \"Colección Diecinueve\",\n  \"fechaNacimiento\": \"01-ene-2999\",\n  \"genero\": \"No binario\",\n  \"correo\": \"postman@example.com\",\n  \"celular\": \"3001112233\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"informa el campo fechaNacimiento\", () => {\n    const errores = pm.response.json().errores || [];\n    pm.expect(errores.map(e => e.campo)).to.include(\"fechaNacimiento\");\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-03 Género fuera de la lista → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/crear/personas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "crear",
+                "personas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoDocumento\": \"Cédula\",\n  \"numeroDocumento\": \"{{docPrueba}}\",\n  \"primerNombre\": \"Prueba\",\n  \"segundoNombre\": \"Postman\",\n  \"apellidos\": \"Colección Diecinueve\",\n  \"fechaNacimiento\": \"05-mar-2001\",\n  \"genero\": \"Otro\",\n  \"correo\": \"postman@example.com\",\n  \"celular\": \"3001112233\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"informa el campo genero\", () => {\n    const errores = pm.response.json().errores || [];\n    pm.expect(errores.map(e => e.campo)).to.include(\"genero\");\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-03 Documento con letras → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/crear/personas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "crear",
+                "personas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoDocumento\": \"Cédula\",\n  \"numeroDocumento\": \"99ABC\",\n  \"primerNombre\": \"Prueba\",\n  \"segundoNombre\": \"Postman\",\n  \"apellidos\": \"Colección Diecinueve\",\n  \"fechaNacimiento\": \"05-mar-2001\",\n  \"genero\": \"No binario\",\n  \"correo\": \"postman@example.com\",\n  \"celular\": \"3001112233\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"informa el campo numeroDocumento\", () => {\n    const errores = pm.response.json().errores || [];\n    pm.expect(errores.map(e => e.campo)).to.include(\"numeroDocumento\");\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-01 Crear una persona válida → 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/crear/personas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "crear",
+                "personas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoDocumento\": \"Cédula\",\n  \"numeroDocumento\": \"{{docPrueba}}\",\n  \"primerNombre\": \"Prueba\",\n  \"segundoNombre\": \"Postman\",\n  \"apellidos\": \"Colección Diecinueve\",\n  \"fechaNacimiento\": \"05-mar-2001\",\n  \"genero\": \"No binario\",\n  \"correo\": \"postman@example.com\",\n  \"celular\": \"3001112233\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 201\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"devuelve la persona con la fecha como yyyy-mm-dd y sin foto\", () => {",
+                  "    const p = pm.response.json();",
+                  "    pm.expect(p.numeroDocumento).to.eql(pm.variables.get(\"docPrueba\"));",
+                  "    pm.expect(p.fechaNacimiento).to.eql(\"2001-03-05\");",
+                  "    pm.expect(p.tieneFoto).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-02 Documento existente → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/crear/personas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "crear",
+                "personas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoDocumento\": \"Cédula\",\n  \"numeroDocumento\": \"{{docPrueba}}\",\n  \"primerNombre\": \"Prueba\",\n  \"segundoNombre\": \"Postman\",\n  \"apellidos\": \"Colección Diecinueve\",\n  \"fechaNacimiento\": \"05-mar-2001\",\n  \"genero\": \"No binario\",\n  \"correo\": \"postman@example.com\",\n  \"celular\": \"3001112233\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "La foto no se prueba aquí (Postman exige elegir un archivo del disco). Se prueba con la pantalla Crear personas y con `services/ms-crear/verificar.sh`."
+    },
+    {
+      "name": "02 ms-modificar · GET y PUT /api/modificar/personas/{documento}",
+      "item": [
+        {
+          "name": "CP-08 Buscar sin token → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/modificar/personas/{{docPrueba}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "modificar",
+                "personas",
+                "{{docPrueba}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-08 Buscar como consultor → 403",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/modificar/personas/{{docPrueba}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "modificar",
+                "personas",
+                "{{docPrueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_consultor}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar un documento que no existe → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/modificar/personas/{{docInexistente}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "modificar",
+                "personas",
+                "{{docInexistente}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar la persona (búsqueda previa) → 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/modificar/personas/{{docPrueba}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "modificar",
+                "personas",
+                "{{docPrueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"devuelve la ficha completa, con el campo foto\", () => {",
+                  "    const p = pm.response.json();",
+                  "    pm.expect(p.numeroDocumento).to.eql(pm.variables.get(\"docPrueba\"));",
+                  "    pm.expect(p).to.have.property(\"foto\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-08 Modificar como consultor → 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/modificar/personas/{{docPrueba}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "modificar",
+                "personas",
+                "{{docPrueba}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoDocumento\": \"Cédula\",\n  \"numeroDocumento\": \"{{docPrueba}}\",\n  \"primerNombre\": \"Prueba\",\n  \"segundoNombre\": \"Postman\",\n  \"apellidos\": \"Colección Diecinueve\",\n  \"fechaNacimiento\": \"05-mar-2001\",\n  \"genero\": \"No binario\",\n  \"correo\": \"otro@example.com\",\n  \"celular\": \"3001112233\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_consultor}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-03 Modificar con datos inválidos → 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/modificar/personas/{{docPrueba}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "modificar",
+                "personas",
+                "{{docPrueba}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoDocumento\": \"Cédula\",\n  \"numeroDocumento\": \"{{docPrueba}}\",\n  \"primerNombre\": \"Prueba\",\n  \"segundoNombre\": \"Postman\",\n  \"apellidos\": \"Colección Diecinueve\",\n  \"fechaNacimiento\": \"05-mar-2001\",\n  \"genero\": \"No binario\",\n  \"correo\": \"sin-arroba\",\n  \"celular\": \"3001112233\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"informa el campo correo\", () => {\n    const errores = pm.response.json().errores || [];\n    pm.expect(errores.map(e => e.campo)).to.include(\"correo\");\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Modificar un documento que no existe → 404",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/modificar/personas/{{docInexistente}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "modificar",
+                "personas",
+                "{{docInexistente}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoDocumento\": \"Cédula\",\n  \"numeroDocumento\": \"{{docInexistente}}\",\n  \"primerNombre\": \"Prueba\",\n  \"segundoNombre\": \"Postman\",\n  \"apellidos\": \"Colección Diecinueve\",\n  \"fechaNacimiento\": \"05-mar-2001\",\n  \"genero\": \"No binario\",\n  \"correo\": \"postman@example.com\",\n  \"celular\": \"3001112233\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-04 Modificar el correo → 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/modificar/personas/{{docPrueba}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "modificar",
+                "personas",
+                "{{docPrueba}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoDocumento\": \"Cédula\",\n  \"numeroDocumento\": \"{{docPrueba}}\",\n  \"primerNombre\": \"Prueba\",\n  \"segundoNombre\": \"Postman\",\n  \"apellidos\": \"Colección Diecinueve\",\n  \"fechaNacimiento\": \"05-mar-2001\",\n  \"genero\": \"No binario\",\n  \"correo\": \"postman.nuevo@example.com\",\n  \"celular\": \"3001112233\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"devuelve el correo nuevo y el mismo documento\", () => {",
+                  "    const p = pm.response.json();",
+                  "    pm.expect(p.correo).to.eql(\"postman.nuevo@example.com\");",
+                  "    pm.expect(p.numeroDocumento).to.eql(pm.variables.get(\"docPrueba\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 ms-consultar · GET /api/consultar",
+      "item": [
+        {
+          "name": "Health sin token → 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/consultar/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "consultar",
+                "health"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"indica que está disponible\", () => pm.expect(pm.response.json().estado).to.eql(\"disponible\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-08 Consultar sin token → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/consultar/personas/{{docPrueba}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "consultar",
+                "personas",
+                "{{docPrueba}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Documento inválido → 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/consultar/personas/{{docInvalido}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "consultar",
+                "personas",
+                "{{docInvalido}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Documento que no existe → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/consultar/personas/{{docInexistente}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "consultar",
+                "personas",
+                "{{docInexistente}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar como consultor → 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/consultar/personas/{{docPrueba}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "consultar",
+                "personas",
+                "{{docPrueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_consultor}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"devuelve la ficha con el correo modificado\", () => {",
+                  "    const p = pm.response.json();",
+                  "    pm.expect(p.numeroDocumento).to.eql(pm.variables.get(\"docPrueba\"));",
+                  "    pm.expect(p.correo).to.eql(\"postman.nuevo@example.com\");",
+                  "    pm.expect(p).to.have.property(\"foto\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar como administrador → 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/consultar/personas/{{docPrueba}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "consultar",
+                "personas",
+                "{{docPrueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "CP-07 (apagar ms-consultar) se prueba a mano: `docker compose stop ms-consultar` y se vuelve a correr «Health sin token»; debe responder 404 desde Traefik. Con `docker compose up -d ms-consultar` vuelve a 200."
+    },
+    {
+      "name": "04 ms-log · GET /api/log y POST /api/log/consulta-nl",
+      "item": [
+        {
+          "name": "CP-08 Sin token → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/log",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-08 Token falso → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/log",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "esto.no.es.un.token",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultor puede ver el log → 200 con total, pagina, tamano y registros",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/log",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_consultor}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"trae la paginación y la lista de registros\", () => {",
+                  "    const l = pm.response.json();",
+                  "    pm.expect(l).to.have.keys(\"total\", \"pagina\", \"tamano\", \"registros\");",
+                  "    pm.expect(l.registros).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-01 El CREAR exitoso quedó en el log",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/log?tipo=CREAR&documento={{docPrueba}}&tamano=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log"
+              ],
+              "query": [
+                {
+                  "key": "tipo",
+                  "value": "CREAR"
+                },
+                {
+                  "key": "documento",
+                  "value": "{{docPrueba}}"
+                },
+                {
+                  "key": "tamano",
+                  "value": "100"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "const log = pm.response.json();",
+                  "const registros = log.registros || [];",
+                  "pm.test(\"hay un CREAR con resultado EXITO del administrador\", () => {",
+                  "    const ok = registros.find(r => r.resultado === \"EXITO\");",
+                  "    pm.expect(ok, \"registro CREAR exitoso\").to.exist;",
+                  "    pm.expect(ok.usuario).to.eql(pm.variables.get(\"usuarioAdmin\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-02 El intento con documento repetido quedó como ERROR",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/log?tipo=CREAR&documento={{docPrueba}}&tamano=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log"
+              ],
+              "query": [
+                {
+                  "key": "tipo",
+                  "value": "CREAR"
+                },
+                {
+                  "key": "documento",
+                  "value": "{{docPrueba}}"
+                },
+                {
+                  "key": "tamano",
+                  "value": "100"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "const log = pm.response.json();",
+                  "const registros = log.registros || [];",
+                  "pm.test(\"hay al menos un CREAR con resultado ERROR\", () => pm.expect(registros.some(r => r.resultado === \"ERROR\")).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-04 El MODIFICAR guardó el valor anterior y el nuevo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/log?tipo=MODIFICAR&documento={{docPrueba}}&tamano=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log"
+              ],
+              "query": [
+                {
+                  "key": "tipo",
+                  "value": "MODIFICAR"
+                },
+                {
+                  "key": "documento",
+                  "value": "{{docPrueba}}"
+                },
+                {
+                  "key": "tamano",
+                  "value": "100"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "const log = pm.response.json();",
+                  "const registros = log.registros || [];",
+                  "pm.test(\"el detalle trae el correo anterior y el nuevo\", () => {",
+                  "    const ok = registros.find(r => r.resultado === \"EXITO\");",
+                  "    pm.expect(ok, \"registro MODIFICAR exitoso\").to.exist;",
+                  "    pm.expect(ok.detalle.anterior.correo).to.eql(\"postman@example.com\");",
+                  "    pm.expect(ok.detalle.nuevo.correo).to.eql(\"postman.nuevo@example.com\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-06 Filtro por tipo: solo CREAR",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/log?tipo=CREAR&tamano=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log"
+              ],
+              "query": [
+                {
+                  "key": "tipo",
+                  "value": "CREAR"
+                },
+                {
+                  "key": "tamano",
+                  "value": "100"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "const log = pm.response.json();",
+                  "const registros = log.registros || [];",
+                  "pm.test(\"todos los registros son CREAR\", () => {",
+                  "    pm.expect(registros.length).to.be.above(0);",
+                  "    pm.expect(registros.every(r => r.tipo === \"CREAR\")).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-06 Filtro por documento: solo la persona de prueba",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/log?documento={{docPrueba}}&tamano=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log"
+              ],
+              "query": [
+                {
+                  "key": "documento",
+                  "value": "{{docPrueba}}"
+                },
+                {
+                  "key": "tamano",
+                  "value": "100"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "const log = pm.response.json();",
+                  "const registros = log.registros || [];",
+                  "pm.test(\"todos los registros son de ese documento\", () => {",
+                  "    pm.expect(registros.length).to.be.above(0);",
+                  "    pm.expect(registros.every(r => r.numeroDocumento === pm.variables.get(\"docPrueba\"))).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-06 Filtro por fechas con resultados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/log?documento={{docPrueba}}&desde=2020-01-01&hasta=2099-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log"
+              ],
+              "query": [
+                {
+                  "key": "documento",
+                  "value": "{{docPrueba}}"
+                },
+                {
+                  "key": "desde",
+                  "value": "2020-01-01"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2099-12-31"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "const log = pm.response.json();",
+                  "const registros = log.registros || [];",
+                  "pm.test(\"hay registros en el rango\", () => pm.expect(log.total).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-06 Filtro por fechas sin resultados (rango futuro)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/log?desde=2099-01-01&hasta=2099-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2099-01-01"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2099-12-31"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "const log = pm.response.json();",
+                  "const registros = log.registros || [];",
+                  "pm.test(\"total 0 y lista vacía\", () => {",
+                  "    pm.expect(log.total).to.eql(0);",
+                  "    pm.expect(registros).to.have.lengthOf(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-06 Filtros combinados: tipo + documento + fechas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/log?tipo=MODIFICAR&documento={{docPrueba}}&desde=2020-01-01&hasta=2099-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log"
+              ],
+              "query": [
+                {
+                  "key": "tipo",
+                  "value": "MODIFICAR"
+                },
+                {
+                  "key": "documento",
+                  "value": "{{docPrueba}}"
+                },
+                {
+                  "key": "desde",
+                  "value": "2020-01-01"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2099-12-31"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "const log = pm.response.json();",
+                  "const registros = log.registros || [];",
+                  "pm.test(\"solo MODIFICAR de ese documento\", () => {",
+                  "    pm.expect(registros.length).to.be.above(0);",
+                  "    pm.expect(registros.every(r => r.tipo === \"MODIFICAR\" && r.numeroDocumento === pm.variables.get(\"docPrueba\"))).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Fecha desde posterior a hasta → 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/log?desde=2026-12-31&hasta=2026-01-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2026-12-31"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2026-01-01"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tipo fuera de la lista → 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/log?tipo=INVENTADO",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log"
+              ],
+              "query": [
+                {
+                  "key": "tipo",
+                  "value": "INVENTADO"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Paginación: tamano=2 devuelve a lo sumo 2 registros",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/log?tamano=2&pagina=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log"
+              ],
+              "query": [
+                {
+                  "key": "tamano",
+                  "value": "2"
+                },
+                {
+                  "key": "pagina",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "const log = pm.response.json();",
+                  "const registros = log.registros || [];",
+                  "pm.test(\"respeta el tamaño de página\", () => {",
+                  "    pm.expect(log.tamano).to.eql(2);",
+                  "    pm.expect(registros.length).to.be.at.most(2);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "n8n: sin llave de API → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/log/consulta-nl",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log",
+                "consulta-nl"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pregunta\": \"prueba\",\n  \"respuesta\": \"ok\",\n  \"resultado\": \"EXITO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "n8n: llave incorrecta → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "llave-incorrecta"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/log/consulta-nl",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log",
+                "consulta-nl"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pregunta\": \"prueba\",\n  \"respuesta\": \"ok\",\n  \"resultado\": \"EXITO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "n8n: cuerpo inválido con la llave correcta → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{n8nApiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/log/consulta-nl",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log",
+                "consulta-nl"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"respuesta\": \"falta la pregunta\",\n  \"resultado\": \"EXITO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "n8n: registrar una consulta en lenguaje natural → 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{n8nApiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/log/consulta-nl",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log",
+                "consulta-nl"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pregunta\": \"Prueba de la colección de Postman (T19)\",\n  \"respuesta\": \"Respuesta de prueba\",\n  \"resultado\": \"EXITO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 201\", () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El CONSULTA_NL de n8n aparece en el log",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/log?tipo=CONSULTA_NL&tamano=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log"
+              ],
+              "query": [
+                {
+                  "key": "tipo",
+                  "value": "CONSULTA_NL"
+                },
+                {
+                  "key": "tamano",
+                  "value": "20"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "const log = pm.response.json();",
+                  "const registros = log.registros || [];",
+                  "pm.test(\"está la pregunta de la prueba, con n8n como usuario\", () => {",
+                  "    const r = registros.find(x => x.pregunta === \"Prueba de la colección de Postman (T19)\");",
+                  "    pm.expect(r, \"registro CONSULTA_NL\").to.exist;",
+                  "    pm.expect(r.usuario).to.eql(\"n8n\");",
+                  "    pm.expect(r.numeroDocumento).to.be.null;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Las pruebas de n8n necesitan `n8nApiKey` en el entorno (la misma `N8N_LOG_API_KEY` de `.env`)."
+    },
+    {
+      "name": "05 ms-borrar · GET y DELETE /api/borrar/personas/{documento}",
+      "item": [
+        {
+          "name": "CP-08 Buscar sin token → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrar/personas/{{docPrueba}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrar",
+                "personas",
+                "{{docPrueba}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-08 Buscar como consultor → 403",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrar/personas/{{docPrueba}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrar",
+                "personas",
+                "{{docPrueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_consultor}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar un documento que no existe → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrar/personas/{{docInexistente}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrar",
+                "personas",
+                "{{docInexistente}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar la persona antes de borrar → 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrar/personas/{{docPrueba}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrar",
+                "personas",
+                "{{docPrueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"trae la ficha para revisarla\", () => pm.expect(pm.response.json().numeroDocumento).to.eql(pm.variables.get(\"docPrueba\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-08 Borrar como consultor → 403",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrar/personas/{{docPrueba}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrar",
+                "personas",
+                "{{docPrueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_consultor}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Borrar un documento que no existe → 404",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrar/personas/{{docInexistente}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrar",
+                "personas",
+                "{{docInexistente}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-05 Borrar la persona → 204",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrar/personas/{{docPrueba}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrar",
+                "personas",
+                "{{docPrueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 CP-05 Después de borrar",
+      "item": [
+        {
+          "name": "La persona borrada ya no se puede consultar → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/consultar/personas/{{docPrueba}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "consultar",
+                "personas",
+                "{{docPrueba}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-05 El historial de la persona sigue completo en el log",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/log?documento={{docPrueba}}&tamano=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "log"
+              ],
+              "query": [
+                {
+                  "key": "documento",
+                  "value": "{{docPrueba}}"
+                },
+                {
+                  "key": "tamano",
+                  "value": "100"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"responde 200\", () => pm.response.to.have.status(200));",
+                  "const log = pm.response.json();",
+                  "const registros = log.registros || [];",
+                  "pm.test(\"conserva CREAR, MODIFICAR, CONSULTAR y BORRAR\", () => {",
+                  "    const tipos = registros.map(r => r.tipo);",
+                  "    [\"CREAR\", \"MODIFICAR\", \"CONSULTAR\", \"BORRAR\"].forEach(t => pm.expect(tipos, t).to.include(t));",
+                  "});",
+                  "pm.test(\"el BORRAR guardó los datos que tenía la persona\", () => {",
+                  "    const b = registros.find(r => r.tipo === \"BORRAR\" && r.resultado === \"EXITO\");",
+                  "    pm.expect(b, \"registro BORRAR exitoso\").to.exist;",
+                  "    pm.expect(b.detalle.anterior.correo).to.eql(\"postman.nuevo@example.com\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
