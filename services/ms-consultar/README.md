@@ -39,7 +39,7 @@ Debe terminar con `TODO BIEN`. Además de la consulta y el log, apaga ms-consult
 
 ## Pendiente en otras tareas
 
-- **T13:** la pantalla de consulta del frontend.
+- (T13 hecha: la pantalla de consulta del frontend está en `frontend/src/paginas/Consultar.tsx`.)
 - **T18:** pruebas unitarias con Jest.
 
 ## Archivos

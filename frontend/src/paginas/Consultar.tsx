@@ -1,10 +1,19 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { useSesion } from '../auth/ContextoSesion';
-import { EnConstruccion } from './EnConstruccion';
+import { BusquedaPorDocumento } from '../componentes/BusquedaPorDocumento';
+import { FichaPersona, nombreCompleto } from '../persona/FichaPersona';
+import type { PersonaApi } from '../persona/tipos';
 
-/** Consultar avisa si su servicio está apagado (CU-04, CP-07). La pantalla la completa T13. */
+/**
+ * Consultar datos personales (CU-04), para los dos roles: busca por documento en ms-consultar
+ * y muestra la ficha completa con la foto. Si el servicio está apagado avisa que no está
+ * disponible (CP-07); las demás opciones siguen funcionando.
+ */
 export function Consultar() {
   const { consultarDisponible } = useSesion();
+  const [persona, setPersona] = useState<PersonaApi | null>(null);
+
   if (consultarDisponible === false) {
     return (
       <section className="aviso">
@@ -16,5 +25,28 @@ export function Consultar() {
       </section>
     );
   }
-  return <EnConstruccion titulo="Consultar datos personales" tarea="T13" />;
+
+  return (
+    <section className="pantalla">
+      <h1>Consultar datos personales</h1>
+      {persona ? (
+        <>
+          <p className="nota">
+            Ficha de <strong>{nombreCompleto(persona)}</strong> ({persona.numeroDocumento}).
+          </p>
+          <FichaPersona persona={persona} />
+          <div className="acciones">
+            <button type="button" className="boton" onClick={() => setPersona(null)}>
+              Consultar otra persona
+            </button>
+            <Link to="/" className="boton secundario">
+              Volver al menú
+            </Link>
+          </div>
+        </>
+      ) : (
+        <BusquedaPorDocumento ruta="/api/consultar/personas" alEncontrar={setPersona} />
+      )}
+    </section>
+  );
 }

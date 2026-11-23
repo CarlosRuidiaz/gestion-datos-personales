@@ -1,6 +1,6 @@
 # frontend
 
-Interfaz web en React con Vite y TypeScript, servida con Nginx detrás de Traefik en `/` (todo lo que no empieza por `/api`). Tarea **T11**: login con Keycloak, menú por rol y contenedor. **T12** hizo las pantallas de crear y modificar, y **T13** llena las de consultar, borrar y log.
+Interfaz web en React con Vite y TypeScript, servida con Nginx detrás de Traefik en `/` (todo lo que no empieza por `/api`). Tarea **T11**: login con Keycloak, menú por rol y contenedor. **T12** hizo las pantallas de crear y modificar, y **T13** las de consultar, borrar y log.
 
 ## Qué hace hoy
 
@@ -10,12 +10,16 @@ Interfaz web en React con Vite y TypeScript, servida con Nginx detrás de Traefi
 - **Crear personas (CU-02, T12).** Formulario vacío que envía `POST /api/crear/personas` como `multipart`, con la foto si la hay. Al guardar confirma a quién registró; un 409 marca el número de documento («Ya hay una persona registrada…») y un 400 marca cada campo con el mensaje del servidor.
 - **Modificar datos personales (CU-03, T12).** Busca por documento con `GET /api/modificar/personas/{documento}` (un 404 dice que no hay una persona registrada), llena el mismo formulario con el documento de solo lectura y guarda con `PUT`. La foto se reemplaza eligiendo otra, se conserva si no se toca y se quita con «Quitar la foto actual» (`eliminarFoto=true`).
 - **Validaciones (sección 3.3).** El formulario valida cada campo al salir de él y todos al guardar, y lleva el cursor al primer error. Los mensajes son los mismos del servidor. La fecha se elige en el calendario o se escribe como `dd-mmm-yyyy` (05-mar-2001), y no puede ser futura. La foto debe ser JPG o PNG de hasta 2 MB. Las reglas y los mensajes repiten los de `libs/common`: si cambia una regla allí, hay que cambiarla también en `src/persona/` (decisión en la sección 7 de `CONTEXTO.md`).
+- **Consultar datos personales (CU-04, T13).** Para los dos roles. Busca por documento en `GET /api/consultar/personas/{documento}` y muestra la ficha completa con la foto (`FichaPersona`, con la misma distribución del formulario). Si ms-consultar está apagado, la pantalla lo dice y las demás opciones siguen funcionando (CP-07).
+- **Borrar personas (CU-06, T13).** Solo el administrador. Busca en `GET /api/borrar/personas/{documento}`, muestra la ficha para revisarla y pide confirmación nombrando a la persona; el foco empieza en «Cancelar». Solo «Sí, borrar» llama a `DELETE`. Al terminar recuerda que el historial sigue en el log (CP-05).
+- **Consultar log (CU-07, CP-06, T13).** Para los dos roles. Filtros de tipo, documento, desde y hasta (con calendario), que se combinan, sobre una tabla de 20 en 20 con «Anterior» y «Siguiente». La fecha y hora se muestran como `dd-mmm-yyyy hh:mm:ss` en hora de Bogotá, la misma zona en que ms-log aplica los filtros. La columna Detalle resume el registro (antes → después en las modificaciones, los datos que tenía la persona en los borrados, el motivo de los errores, la pregunta y la respuesta de n8n) y «Ver detalle completo» muestra el JSON. Sin resultados dice «No hay transacciones que cumplan los filtros».
+- **Servicio apagado.** Si un servicio está apagado, Traefik responde 404 sin JSON; `pedirApi` lo convierte en un `ErrorApi` con estado 503 («El servicio no está disponible en este momento»), para no confundirlo con «no hay una persona con ese documento».
 - **Consulta en lenguaje natural.** Abre `N8N_CHAT_URL` en una pestaña nueva. Mientras esa variable esté vacía (hasta T15), aparece como «Todavía no está configurado».
 
-## Para T13
+## Para seguir programando
 
-- **Dónde va cada pantalla:** reemplaza el `EnConstruccion` de su ruta en `src/App.tsx`. La ruta ya está protegida por rol con `RutaConRol`.
-- **Llamar a la API:** usa `pedirApi` de `src/api/cliente.ts`. Pone el token (renovándolo si hace falta), vuelve al login con un 401 y lanza `ErrorApi` con `estado`, `message` y `errores: [{ campo, mensaje }]` (el formato de los 400 de la sección 7 de `CONTEXTO.md`), listo para mostrar cada mensaje junto a su campo.
+- **Pantallas:** cada una está en `src/paginas/` y su ruta en `src/App.tsx`, protegida por rol con `RutaConRol`.
+- **Llamar a la API:** usa `pedirApi` de `src/api/cliente.ts`. Pone el token (renovándolo si hace falta), vuelve al login con un 401 y lanza `ErrorApi` (con 503 si el servicio está apagado) con `estado`, `message` y `errores: [{ campo, mensaje }]` (el formato de los 400 de la sección 7 de `CONTEXTO.md`), listo para mostrar cada mensaje junto a su campo.
 
   ```ts
   const persona = await pedirApi<Persona>(`/api/consultar/personas/${documento}`);
@@ -23,7 +27,8 @@ Interfaz web en React con Vite y TypeScript, servida con Nginx detrás de Traefi
   await pedirApi(`/api/borrar/personas/${documento}`, { method: 'DELETE' }); // 204: devuelve undefined
   ```
 
-- **Buscar por documento:** `BusquedaPorDocumento` (`src/componentes/`) valida el número, llama a `ruta/{documento}` y muestra «No hay una persona registrada…» con un 404. Para Consultar y Borrar basta con cambiar la ruta: `<BusquedaPorDocumento ruta="/api/borrar/personas" alEncontrar={...} />`.
+- **Buscar por documento:** `BusquedaPorDocumento` (`src/componentes/`) valida el número, llama a `ruta/{documento}` y muestra «No hay una persona registrada…» con un 404. La usan Modificar, Consultar y Borrar, cada una con su ruta.
+- **Mostrar una persona:** `FichaPersona` y `nombreCompleto` (`src/persona/FichaPersona.tsx`).
 - **Mensajes de resultado:** `Alerta` (`src/componentes/`), con `tipo="exito"` o `"error"`.
 - **Persona y fecha:** el tipo `PersonaApi`, los nombres de los campos y `formatearFecha` (yyyy-mm-dd a dd-mmm-yyyy, para mostrar) están en `src/persona/`.
 - **Usuario y estado de Consultar:** `useSesion()` (de `src/auth/ContextoSesion.tsx`) da el usuario (`nombre`, `roles`) y `consultarDisponible`.
@@ -77,7 +82,9 @@ Lo que se dibuja después del login lo cubren las pruebas de `npm test`.
 - `src/menu/`: opciones del menú por rol (`opciones.ts`, con pruebas) y chequeo de Consultar.
 - `src/api/cliente.ts`: `pedirApi` y `ErrorApi`.
 - `src/persona/`: formulario de persona (`FormularioPersona.tsx`), validaciones y fecha (con pruebas), armado del cuerpo `multipart` y traducción de los errores de la API.
-- `src/paginas/`: menú, crear (`CrearPersona.tsx`), modificar (`ModificarPersona.tsx`) y los marcadores de T13.
+- `src/persona/FichaPersona.tsx`: ficha de solo lectura de una persona.
+- `src/log/`: filtros y ruta de `GET /api/log`, formato de fecha y hora y resumen del detalle (con pruebas), y la tabla.
+- `src/paginas/`: menú, crear, modificar, consultar, borrar (`BorrarPersona.tsx`, con la confirmación) y log (`ConsultarLog.tsx`).
 - `src/componentes/`: marco con usuario y cierre de sesión, protección por rol, búsqueda por documento y avisos.
 - `nginx/`: configuración de Nginx y script que genera `config.js`.
 - `Dockerfile`: construye con Node 24 y sirve con `nginx:1.28-alpine`.

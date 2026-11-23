@@ -1,4 +1,4 @@
-/* Estilos base. T12 agregó los del formulario y T13 puede ampliarlos; los colores están en variables. */
+/* Estilos base y de las pantallas (T12 y T13). Los colores están en variables. */
 :root {
   --fondo: #f5f6f8;
   --superficie: #ffffff;
@@ -386,4 +386,219 @@ fieldset:disabled .boton {
   .foto {
     max-width: 12rem;
   }
+}
+
+/* --- Consultar, borrar y log (T13) ---------------------------------------- */
+.pantalla.ancha {
+  max-width: none;
+}
+
+.ficha-persona {
+  padding: 1.25rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 0.5rem;
+}
+
+.ficha-persona hr {
+  border: 0;
+  border-top: 1px solid var(--borde);
+  margin: 1.25rem 0;
+}
+
+.ficha-persona dl {
+  margin: 0;
+}
+
+.dato {
+  min-width: 0;
+}
+
+.dato.ancho {
+  grid-column: 1 / -1;
+}
+
+.dato dt {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.dato dd {
+  margin: 0.15rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.vacio {
+  color: var(--texto-suave);
+  font-style: italic;
+}
+
+.boton.peligro {
+  border-color: var(--error);
+  background: var(--error);
+}
+
+.boton.peligro:hover {
+  background: #8f1c13;
+}
+
+.confirmacion {
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #e5a29b;
+  border-radius: 0.5rem;
+  background: #fdf0ef;
+}
+
+.confirmacion h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  color: var(--error);
+}
+
+.confirmacion p {
+  margin: 0;
+}
+
+.confirmacion .acciones {
+  margin-top: 1rem;
+}
+
+.filtros-log {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 0.5rem;
+}
+
+.filtros-log input,
+.filtros-log select {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.375rem;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.filtros-log [aria-invalid='true'] {
+  border-color: var(--error);
+}
+
+.filtros-log label {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.acciones-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.resumen-log {
+  margin: 0 0 0.5rem;
+  color: var(--texto-suave);
+}
+
+.sin-resultados {
+  max-width: none;
+}
+
+.tabla-contenedor {
+  overflow-x: auto;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 0.5rem;
+}
+
+.tabla-log {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.tabla-log th,
+.tabla-log td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--borde);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tabla-log th {
+  background: var(--fondo);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tabla-log tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.tabla-log .detalle {
+  min-width: 18rem;
+}
+
+.tabla-log .detalle ul {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.tabla-log details {
+  margin-top: 0.25rem;
+}
+
+.tabla-log summary {
+  color: var(--primario);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.tabla-log pre {
+  max-width: 32rem;
+  margin: 0.4rem 0 0;
+  padding: 0.5rem;
+  overflow-x: auto;
+  background: var(--fondo);
+  border-radius: 0.375rem;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+}
+
+.resultado {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.resultado.exito {
+  background: #eef8f1;
+  color: #1d5b35;
+}
+
+.resultado.error {
+  background: #fdf0ef;
+  color: var(--error);
+}
+
+.paginacion {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1rem;
 }
