@@ -7,8 +7,8 @@ Scripts de la base de datos PostgreSQL 16 con pgvector. Referencia: secciones 6.
 | `init.sql` | Crea las tablas `persona`, `log_transaccion` y `persona_embedding`, la vista `vista_personas`, los índices, los seis usuarios de base de datos y sus permisos |
 | `init-usuarios.sh` | Asigna a cada usuario la contraseña definida en `.env` (`DB_PASSWORD_*`). Ninguna contraseña queda en el repositorio |
 | `verificar.sh` | Comprueba que el esquema, las restricciones y los permisos coinciden con el diseño |
-
-La tarea **T17** agrega aquí el script de datos de prueba (unas 20 personas ficticias).
+| `datos-prueba.sql` | 20 personas ficticias y un registro `CREAR` en el log por cada una (usuario `datos-prueba`) |
+| `cargar-datos-prueba.sh` | Ejecuta `datos-prueba.sql` en el contenedor `postgres` |
 
 ## Cuándo se ejecutan
 
@@ -28,6 +28,18 @@ docker compose exec -T postgres sh < database/verificar.sh
 ```
 
 Debe terminar con `TODO BIEN`. Usa el documento ficticio `9999999999` y limpia lo que crea.
+
+## Cargar datos de prueba
+
+Con el contenedor `postgres` arriba, desde la raíz del repositorio (en Windows, con Git Bash):
+
+```bash
+bash database/cargar-datos-prueba.sh
+```
+
+Se puede repetir sin duplicar nada: una persona que ya existe no se vuelve a insertar y tampoco recibe otro registro de log. No necesita Keycloak ni los microservicios. Después hay que ejecutar **Reindexar todo** en n8n para que el chat conozca a las personas (ver `n8n/README.md`).
+
+Los registros de log de estos datos llevan el usuario `datos-prueba`, así se distinguen de los de usuarios reales. Si recreas el volumen (`docker compose down -v`) se pierde todo y hay que volver a cargar.
 
 ## Usuarios y permisos
 
