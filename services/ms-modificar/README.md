@@ -36,7 +36,7 @@ Debe terminar con `TODO BIEN`. Inserta su propia persona de prueba en la base de
 
 ## Pendiente en otras tareas
 
-- **T16:** avisar a n8n por webhook después de modificar.
+- (T16 hecha: después de una modificación que cambie algún dato avisa a n8n con `MODIFICAR`; cambiar solo la foto o guardar sin cambios no avisa. Ver `libs/common/README.md`, sección «Aviso a n8n».)
 - **T18:** pruebas unitarias con Jest.
 
 ## Archivos

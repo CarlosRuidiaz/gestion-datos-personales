@@ -19,6 +19,7 @@ Cambiar algo aquí afecta a todos los servicios: regístralo en la sección 7 de
 | `parsearFecha`, `formatearFecha` | Fechas `dd-mmm-yyyy` y `yyyy-mm-dd` |
 | `@Roles`, `@Publico`, `@Auditar`, `@UsuarioActual` | Decoradores de las rutas |
 | `AuditoriaService` | Escribe en el log dentro de la transacción de la operación |
+| `AvisoIndexacionService` | Avisa a n8n que una persona cambió (T16), después del commit y sin esperar la respuesta |
 | `Rol`, `TipoTransaccion`, `ResultadoTransaccion`, `TIPOS_DOCUMENTO`, `GENEROS` | Valores del dominio |
 
 ## Las tres reglas para escribir un microservicio
@@ -84,6 +85,22 @@ Otros detalles:
 - **Búsquedas previas.** En Modificar y Borrar, la búsqueda lleva `@Auditar(TipoTransaccion.CONSULTAR, CONTEXTO_PREVIO_MODIFICAR)` (o `CONTEXTO_PREVIO_BORRAR`), y el registro de éxito pone ese mismo texto en `detalle.contexto`.
 - **Formularios `multipart`.** El 403 se decide antes de leer el formulario, así que ese registro del log queda sin número de documento.
 - **Ejemplo real.** `services/ms-crear` es el primer servicio hecho con esta plantilla, con su `verificar.sh`.
+
+### Aviso a n8n (T16)
+
+ms-crear, ms-modificar y ms-borrar avisan a n8n para que actualice el vector de la persona (sección 5.2 del diseño, contrato en `n8n/README.md`). El aviso va **después** de que la transacción quedó confirmada y **sin `await`**:
+
+```ts
+const creada = await this.guardar(dto, foto, usuario);          // persona y log, en su transacción
+void this.indexacion.avisar(creada.numeroDocumento, TipoTransaccion.CREAR);
+return creada;
+```
+
+- `AvisoIndexacionService.avisar()` nunca lanza errores. Si n8n está apagado, tarda más de 5 segundos o responde con error, el servicio responde igual y deja una advertencia en su log («n8n no recibió el aviso…»). El flujo «Reindexar todo» de n8n corrige el índice después.
+- Solo se avisa cuando la operación salió bien: nunca en un 400, 403, 404 o 409.
+- ms-modificar solo avisa si cambió algún dato. Cambiar solo la foto, o guardar sin cambios, no avisa, porque la foto no forma parte del texto indexado.
+- La URL sale de `N8N_WEBHOOK_INDEXACION_URL`. Si está vacía, no se avisa y el servicio lo advierte al arrancar.
+- `services/verificar-indexacion.sh` lo comprueba de extremo a extremo.
 
 ## Cómo crear un microservicio que la use
 

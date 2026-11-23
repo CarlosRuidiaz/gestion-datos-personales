@@ -33,7 +33,7 @@ Debe terminar con `TODO BIEN`. Llama a la API por el gateway con tokens reales y
 
 ## Pendiente en otras tareas
 
-- **T16:** avisar a n8n por webhook después de crear, para actualizar el índice vectorial.
+- (T16 hecha: después de crear avisa a n8n con `CREAR`, sin esperar la respuesta. Ver `libs/common/README.md`, sección «Aviso a n8n».)
 - **T18:** pruebas unitarias con Jest.
 
 ## Archivos

@@ -122,6 +122,8 @@ services:
       KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-gestion-personas}
       TZ: ${TZ:-America/Bogota}
+      # Aviso a n8n después de cada cambio (T16). Si n8n está apagado, el servicio sigue funcionando.
+      N8N_WEBHOOK_INDEXACION_URL: ${N8N_WEBHOOK_INDEXACION_URL:-http://n8n:5678/webhook/indexar-persona}
     depends_on:
       postgres:
         condition: service_healthy
@@ -149,6 +151,8 @@ services:
       KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-gestion-personas}
       TZ: ${TZ:-America/Bogota}
+      # Aviso a n8n después de cada cambio (T16). Si n8n está apagado, el servicio sigue funcionando.
+      N8N_WEBHOOK_INDEXACION_URL: ${N8N_WEBHOOK_INDEXACION_URL:-http://n8n:5678/webhook/indexar-persona}
     depends_on:
       postgres:
         condition: service_healthy
@@ -176,6 +180,8 @@ services:
       KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-gestion-personas}
       TZ: ${TZ:-America/Bogota}
+      # Aviso a n8n después de cada cambio (T16). Si n8n está apagado, el servicio sigue funcionando.
+      N8N_WEBHOOK_INDEXACION_URL: ${N8N_WEBHOOK_INDEXACION_URL:-http://n8n:5678/webhook/indexar-persona}
     depends_on:
       postgres:
         condition: service_healthy

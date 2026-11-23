@@ -4,6 +4,7 @@ import { DataSource, QueryFailedError } from 'typeorm';
 import {
   aPersonaRespuesta,
   AuditoriaService,
+  AvisoIndexacionService,
   CrearPersonaDto,
   datosParaLog,
   FotoValidada,
@@ -23,13 +24,24 @@ export class PersonasService {
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly auditoria: AuditoriaService,
+    private readonly indexacion: AvisoIndexacionService,
   ) {}
 
   /**
-   * Crea la persona y su registro de log en una sola transacción (flujo «Crear persona», sección 5.2).
-   * Si el documento ya existe lanza 409; ese intento lo registra el filtro de auditoría.
+   * Crea la persona (flujo «Crear persona», sección 5.2) y, ya confirmada la transacción,
+   * avisa a n8n sin esperar su respuesta para que indexe a la persona (paso 6).
    */
   async crear(dto: CrearPersonaDto, foto: FotoValidada | null, usuario: UsuarioAutenticado): Promise<PersonaRespuesta> {
+    const creada = await this.guardar(dto, foto, usuario);
+    void this.indexacion.avisar(creada.numeroDocumento, TipoTransaccion.CREAR);
+    return creada;
+  }
+
+  /**
+   * Crea la persona y su registro de log en una sola transacción.
+   * Si el documento ya existe lanza 409; ese intento lo registra el filtro de auditoría.
+   */
+  private async guardar(dto: CrearPersonaDto, foto: FotoValidada | null, usuario: UsuarioAutenticado): Promise<PersonaRespuesta> {
     try {
       return await this.dataSource.transaction(async (manager) => {
         if (await manager.existsBy(Persona, { numeroDocumento: dto.numeroDocumento })) {

@@ -37,6 +37,16 @@ export interface ConfiguracionBaseDeDatos {
   password: string;
 }
 
+export interface ConfiguracionIndexacion {
+  /** Webhook de n8n que actualiza el vector de una persona. Vacío: no se avisa. */
+  urlWebhook: string;
+}
+
+/** N8N_WEBHOOK_INDEXACION_URL es opcional: sin ella los servicios funcionan, pero no avisan a n8n. */
+export function configuracionIndexacion(): ConfiguracionIndexacion {
+  return { urlWebhook: (process.env.N8N_WEBHOOK_INDEXACION_URL ?? '').trim() };
+}
+
 /** Cada servicio recibe en DB_USER y DB_PASSWORD su propio usuario de base de datos (sección 6.3 del diseño). */
 export function configuracionBaseDeDatos(): ConfiguracionBaseDeDatos {
   return {

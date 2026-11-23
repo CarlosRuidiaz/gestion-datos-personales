@@ -21,3 +21,5 @@ export * from './seguridad/verificador-token.service';
 
 export * from './auditoria/auditoria.service';
 export * from './auditoria/auditoria.filter';
+
+export * from './indexacion/aviso-indexacion.service';
