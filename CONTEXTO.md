@@ -91,7 +91,7 @@ Notas:
 - Keycloak importa `keycloak/realm.json` solo si el realm no existe. Si cambia el archivo o una contraseña de los usuarios de prueba, hay que borrar el volumen `keycloak_data` (pasos en `keycloak/README.md`).
 - Para apagar todo: `docker compose --profile consultar down`.
 
-Configuración inicial de n8n (una sola vez): `bash n8n/configurar.sh` carga las credenciales de PostgreSQL, Gemini y la llave de ms-log desde `.env`, importa los flujos de `n8n/workflows` y publica los de indexación y chat. La cuenta de administrador se crea a mano en <http://localhost:5678>. Detalles, y cómo ejecutar la reindexación completa, en `n8n/README.md`. La guía completa en un equipo limpio es la tarea T20.
+Configuración inicial de n8n (una sola vez): `bash n8n/configurar.sh` carga las credenciales de PostgreSQL, Gemini y la llave de ms-log desde `.env`, importa los flujos de `n8n/workflows` y publica los de indexación y chat. La cuenta de administrador se crea a mano en <http://localhost:5678>. Detalles, y cómo ejecutar la reindexación completa, en `n8n/README.md`. La guía paso a paso para un equipo limpio, con la prueba completa y los problemas frecuentes, está en `docs/guia-configuracion.md` (tarea T20).
 
 ## 4. Convenciones
 
@@ -177,7 +177,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 | T17 | Script de datos de prueba (unas 20 personas ficticias) | database/ | T03 | Hecha | Juan Fernández | feat/T17-datos-de-prueba |
 | T18 | Pruebas unitarias y de integración (Jest) | services/, libs/ | T06 a T10 | Hecha | Juan Fernández | feat/T18-pruebas-jest |
 | T19 | Colección de Postman con todos los endpoints y permisos | tests/postman/ | T06 a T10 | Hecha | Juan Fernández | feat/T19-coleccion-postman |
-| T20 | Guía de configuración inicial de n8n y prueba completa en un equipo limpio | docs/ | T15, T16, T17 | Pendiente | | |
+| T20 | Guía de configuración inicial de n8n y prueba completa en un equipo limpio | docs/ | T15, T16, T17 | Hecha | Daniel Mendez | feat/T20-guia |
 | T21 | Opcional: despliegue en Azure for Students | | T20 | Pendiente | | |
 
 Después de T05, el trabajo se puede repartir en cuatro frentes paralelos con poco cruce: microservicios (T06 a T10), frontend (T11 a T13), n8n (T14 a T16) y calidad (T17 a T19).
@@ -194,8 +194,6 @@ Formato de cada nota:
 - Falta: qué queda pendiente, en orden.
 - Para retomar: archivos clave, comandos, decisiones a medias o problemas encontrados.
 ```
-
-(No hay tareas en curso.)
 
 ## 7. Decisiones tomadas durante la implementación
 

@@ -38,7 +38,7 @@ cp .env.example .env        # completar llaves y contraseñas
 docker compose --profile consultar up -d --build
 ```
 
-La aplicación queda en <http://localhost>. Qué servicios arrancan hoy y cómo comprobar que funcionan está en la sección 3 de [CONTEXTO.md](CONTEXTO.md), que se mantiene al día con cada tarea.
+La aplicación queda en <http://localhost>. La guía paso a paso, con la configuración inicial de n8n y la lista de pruebas en un equipo limpio, está en [docs/guia-configuracion.md](docs/guia-configuracion.md). Qué servicios arrancan hoy y cómo comprobar que funcionan está en la sección 3 de [CONTEXTO.md](CONTEXTO.md), que se mantiene al día con cada tarea.
 
 La opción Consultar se habilita y deshabilita según demanda:
 
@@ -64,6 +64,7 @@ docker-compose.yml
 ## Documentación
 
 - [CONTEXTO.md](CONTEXTO.md): estado actual, tablero de tareas, decisiones y protocolo de trabajo.
+- [docs/guia-configuracion.md](docs/guia-configuracion.md): instalación desde cero, configuración inicial de n8n, prueba completa y problemas frecuentes.
 - [docs/enunciado.md](docs/enunciado.md): enunciado y rúbrica del profesor.
 - [docs/diseno/documento_diseno.md](docs/diseno/documento_diseno.md): documento de diseño entregado.
 - [docs/notas_del_equipo.md](docs/notas_del_equipo.md): decisiones del equipo que complementan el diseño.
