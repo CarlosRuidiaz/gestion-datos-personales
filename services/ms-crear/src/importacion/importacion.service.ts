@@ -52,7 +52,7 @@ const MENSAJE_EXISTE = 'Ya hay una persona registrada con ese número de documen
 const DOCUMENTO_VALIDO = /^[0-9]{1,10}$/;
 
 /**
- * Importación de personas desde un Excel o CSV y sus fotos (T30). Cada persona se crea con
+ * Importación de personas desde un Excel o CSV y sus fotos. Cada persona se crea con
  * PersonasService.crear, igual que desde el formulario: mismas validaciones, su CREAR en el log en la
  * misma transacción y el aviso a n8n para indexarla. Las filas que no se pueden crear quedan en el
  * log como CREAR con resultado ERROR, igual que un formulario rechazado.

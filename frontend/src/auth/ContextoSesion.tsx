@@ -6,7 +6,7 @@ interface DatosDeSesion {
   usuario: Usuario;
   /** null mientras se hace la primera revisión de /api/consultar/health. */
   consultarDisponible: boolean | null;
-  /** Vuelve a revisar el health de Consultar en el momento (T24). */
+  /** Vuelve a revisar el health de Consultar en el momento. */
   revisarConsultar: () => Promise<void>;
 }
 

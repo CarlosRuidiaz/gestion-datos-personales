@@ -6,14 +6,14 @@ const CADA_MS = 10_000;
 export interface EstadoDeConsultar {
   /** null mientras llega la primera respuesta. */
   disponible: boolean | null;
-  /** Revisa el health ya, sin esperar los 10 segundos (lo usa el interruptor de Consultar, T24). */
+  /** Revisa el health ya, sin esperar los 10 segundos (lo usa el interruptor de Consultar). */
   revisar: () => Promise<void>;
 }
 
 /**
  * true mientras GET /api/consultar/health responda 200. Con ms-consultar apagado Traefik
  * responde 404, y sin base de datos el servicio responde 503: cualquier respuesta distinta
- * de 200 cuenta como «no disponible» (sección 7 de CONTEXTO.md). Se revisa cada 10 segundos
+ * de 200 cuenta como «no disponible». Se revisa cada 10 segundos
  * y cada vez que la ventana vuelve a tener el foco.
  */
 export function useConsultarDisponible(): EstadoDeConsultar {

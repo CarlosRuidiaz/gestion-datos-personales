@@ -7,7 +7,7 @@ import { Alerta } from './Alerta';
 export const CONFIRMACION = 'BORRAR TODAS';
 
 /**
- * Borrar todas las personas (T30), dentro de la opción Borrar. Pide escribir BORRAR TODAS antes de
+ * Borrar todas las personas, dentro de la opción Borrar. Pide escribir BORRAR TODAS antes de
  * llamar a ms-borrar, que las borra una por una, cada una con su registro en el log.
  */
 export function BorrarTodas() {

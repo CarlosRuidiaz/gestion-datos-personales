@@ -1,6 +1,6 @@
 # tests/postman
 
-Colección de Postman con todos los endpoints de los cinco microservicios, por el gateway y con tokens reales de Keycloak (tarea T19). Cada petición trae pruebas.
+Colección de Postman con todos los endpoints de los cinco microservicios, por el gateway y con tokens reales de Keycloak. Cada petición trae pruebas.
 
 | Archivo | Qué es |
 | --- | --- |
@@ -55,7 +55,7 @@ CP-08 se repite en cada servicio: sin token responde 401 y con el rol consultor 
 
 - **La foto** (JPG o PNG, máximo 2 MB): Postman necesita elegir un archivo del disco. Se prueba con la pantalla Crear personas y con `bash services/ms-crear/verificar.sh`.
 - **CP-07, apagar ms-consultar:** a mano. `docker compose stop ms-consultar` y se envía «Health sin token» de la carpeta 03: debe responder 404 desde Traefik. Con `docker compose up -d ms-consultar` vuelve a 200.
-- **CP-09 y CP-10, el chat de n8n:** dependen de T15.
+- **CP-09 y CP-10, el chat de n8n:** se prueban con `bash n8n/verificar-chat.sh`.
 
 ## Si algo falla
 

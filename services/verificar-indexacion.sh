@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verifica T16: ms-crear, ms-modificar y ms-borrar avisan a n8n después de cada cambio,
+# Verifica que ms-crear, ms-modificar y ms-borrar avisan a n8n después de cada cambio,
 # con el contrato de n8n/README.md, sin esperar la respuesta y sin fallar si n8n no está.
 # Uso, desde la raíz del repositorio y con todo arriba (en Windows, con Git Bash):
 #

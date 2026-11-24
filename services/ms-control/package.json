@@ -2,7 +2,7 @@
   "name": "ms-control",
   "version": "1.0.0",
   "private": true,
-  "description": "Apaga y enciende ms-consultar desde la aplicación (T24)",
+  "description": "Apaga y enciende ms-consultar desde la aplicación",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",

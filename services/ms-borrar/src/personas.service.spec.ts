@@ -128,7 +128,7 @@ describe('ms-borrar · PersonasService.borrar', () => {
   });
 });
 
-describe('ms-borrar · PersonasService.borrarTodas (T30)', () => {
+describe('ms-borrar · PersonasService.borrarTodas', () => {
   it('borra una por una, cada una con su BORRAR en el log y su aviso a n8n, sin tocar el resto del log', async () => {
     const { servicio, dataSource, manager, auditoria, indexacion, eventos } = preparar();
     dataSource.getRepository.mockReturnValue({
@@ -158,7 +158,7 @@ describe('ms-borrar · PersonasService.borrarTodas (T30)', () => {
   });
 });
 
-describe('ms-borrar · borrar todas: confirmación (T30)', () => {
+describe('ms-borrar · borrar todas: confirmación', () => {
   it('sin escribir la confirmación exacta responde 400 y no borra nada', () => {
     const personas = { borrarTodas: jest.fn() };
     const controlador = new PersonasController(personas as never);

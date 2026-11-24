@@ -1,4 +1,4 @@
--- Inicialización de la base de datos de Gestión de Datos Personales (tarea T03).
+-- Inicialización de la base de datos de Gestión de Datos Personales.
 -- PostgreSQL ejecuta este archivo una sola vez, cuando el volumen pgdata está vacío.
 -- Si lo cambias, recrea el volumen: docker compose down -v && docker compose up -d
 --
@@ -73,7 +73,7 @@ CREATE INDEX idx_log_fecha_hora       ON log_transaccion (fecha_hora);
 -- Tiene la forma que espera el nodo Postgres PGVector Store de n8n
 -- (id, text, metadata, embedding). El documento va en metadata->>'numero_documento'.
 -- La columna embedding no fija la dimensión: depende del modelo de embeddings
--- de Gemini que se elija en la tarea T14.
+-- de Gemini que se use (gemini-embedding-001, 3072 dimensiones).
 -- ---------------------------------------------------------------------------
 CREATE TABLE persona_embedding (
     id        UUID  PRIMARY KEY DEFAULT gen_random_uuid(),

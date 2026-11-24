@@ -1,5 +1,5 @@
 /*
- * Estilos de la aplicación (rediseño T23, según docs/rediseno/README.md).
+ * Estilos de la aplicación.
  * Un registro de datos personales: papel claro, tinta, campos alineados y una sola pieza con
  * carácter, la barra lateral en verde petróleo. Sin sombras salvo la confirmación del borrado.
  */
@@ -956,7 +956,7 @@ input[name='documento'],
   }
 }
 
-/* --- Importar personas y borrar todas (T30) --------------------------------- */
+/* --- Importar personas y borrar todas --------------------------------- */
 .formulario-importacion {
   display: grid;
   gap: var(--e6);

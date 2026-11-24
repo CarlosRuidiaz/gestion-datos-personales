@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verifica de extremo a extremo la importación de personas desde un Excel con sus fotos (T30), por el
+# Verifica de extremo a extremo la importación de personas desde un Excel con sus fotos, por el
 # gateway y con tokens reales, y los permisos y la confirmación de «Borrar todas».
 # Uso, desde la raíz del repositorio y con todo arriba (en Windows, con Git Bash):
 #

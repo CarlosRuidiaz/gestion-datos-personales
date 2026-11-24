@@ -1,25 +1,25 @@
 # frontend
 
-Interfaz web en React con Vite y TypeScript, servida con Nginx detrás de Traefik en `/` (todo lo que no empieza por `/api`). Tarea **T11**: login con Keycloak, menú por rol y contenedor. **T12** hizo las pantallas de crear y modificar, y **T13** las de consultar, borrar y log.
+Interfaz web en React con Vite y TypeScript, servida con Nginx detrás de Traefik en `/` (todo lo que no empieza por `/api`).
 
-## Qué hace hoy
+## Qué hace
 
 - **Login (CU-01).** Al abrir la aplicación sin sesión, `keycloak-js` redirige a Keycloak con el flujo de código de autorización y PKCE (S256), cliente `frontend`. Al volver, el token de 5 minutos se renueva solo. El botón «Cerrar sesión» cierra la sesión en Keycloak y vuelve a la aplicación.
 - **Menú por rol (sección 8.2 del diseño).** El administrador ve las seis opciones y el consultor solo Consultar, Consulta en lenguaje natural y Consultar log. Cada ruta (`/crear`, `/modificar`, `/consultar`, `/borrar`, `/log`) está protegida por rol: si alguien escribe la dirección sin tener permiso, ve un aviso. La regla de verdad la aplica cada microservicio con el token.
 - **Consultar bajo demanda (DD-04, CP-07).** Revisa `GET /api/consultar/health` cada 10 segundos y al volver a la ventana. Si no responde 200 con `"estado":"disponible"`, Consultar aparece como «No disponible en este momento».
-- **Crear personas (CU-02, T12).** Formulario vacío que envía `POST /api/crear/personas` como `multipart`, con la foto si la hay. Al guardar confirma a quién registró; un 409 marca el número de documento («Ya hay una persona registrada…») y un 400 marca cada campo con el mensaje del servidor.
-- **Modificar datos personales (CU-03, T12).** Busca por documento con `GET /api/modificar/personas/{documento}` (un 404 dice que no hay una persona registrada), llena el mismo formulario con el documento de solo lectura y guarda con `PUT`. La foto se reemplaza eligiendo otra, se conserva si no se toca y se quita con «Quitar la foto actual» (`eliminarFoto=true`).
-- **Validaciones (sección 3.3).** El formulario valida cada campo al salir de él y todos al guardar, y lleva el cursor al primer error. Los mensajes son los mismos del servidor. La fecha se elige en el calendario o se escribe como `dd-mmm-yyyy` (05-mar-2001), y no puede ser futura. La foto debe ser JPG o PNG de hasta 2 MB. Las reglas y los mensajes repiten los de `libs/common`: si cambia una regla allí, hay que cambiarla también en `src/persona/` (decisión en la sección 7 de `CONTEXTO.md`).
-- **Consultar datos personales (CU-04, T13).** Para los dos roles. Busca por documento en `GET /api/consultar/personas/{documento}` y muestra la ficha completa con la foto (`FichaPersona`, con la misma distribución del formulario). Si ms-consultar está apagado, la pantalla lo dice y las demás opciones siguen funcionando (CP-07).
-- **Borrar personas (CU-06, T13).** Solo el administrador. Busca en `GET /api/borrar/personas/{documento}`, muestra la ficha para revisarla y pide confirmación nombrando a la persona; el foco empieza en «Cancelar». Solo «Sí, borrar» llama a `DELETE`. Al terminar recuerda que el historial sigue en el log (CP-05).
-- **Consultar log (CU-07, CP-06, T13).** Para los dos roles. Filtros de tipo, documento, desde y hasta (con calendario), que se combinan, sobre una tabla de 20 en 20 con «Anterior» y «Siguiente». La fecha y hora se muestran como `dd-mmm-yyyy hh:mm:ss` en hora de Bogotá, la misma zona en que ms-log aplica los filtros. La columna Detalle resume el registro (antes → después en las modificaciones, los datos que tenía la persona en los borrados, el motivo de los errores, la pregunta y la respuesta de n8n) y «Ver detalle completo» muestra el JSON. Sin resultados dice «No hay transacciones que cumplan los filtros».
+- **Crear personas (CU-02).** Formulario vacío que envía `POST /api/crear/personas` como `multipart`, con la foto si la hay. Al guardar confirma a quién registró; un 409 marca el número de documento («Ya hay una persona registrada…») y un 400 marca cada campo con el mensaje del servidor.
+- **Modificar datos personales (CU-03).** Busca por documento con `GET /api/modificar/personas/{documento}` (un 404 dice que no hay una persona registrada), llena el mismo formulario con el documento de solo lectura y guarda con `PUT`. La foto se reemplaza eligiendo otra, se conserva si no se toca y se quita con «Quitar la foto actual» (`eliminarFoto=true`).
+- **Validaciones (sección 3.3).** El formulario valida cada campo al salir de él y todos al guardar, y lleva el cursor al primer error. Los mensajes son los mismos del servidor. La fecha se elige en el calendario o se escribe como `dd-mmm-yyyy` (05-mar-2001), y no puede ser futura. La foto debe ser JPG o PNG de hasta 2 MB. Las reglas y los mensajes repiten los de `libs/common`: si cambia una regla allí, hay que cambiarla también en `src/persona/` (ver `docs/decisiones.md`).
+- **Consultar datos personales (CU-04).** Para los dos roles. Busca por documento en `GET /api/consultar/personas/{documento}` y muestra la ficha completa con la foto (`FichaPersona`, con la misma distribución del formulario). Si ms-consultar está apagado, la pantalla lo dice y las demás opciones siguen funcionando (CP-07).
+- **Borrar personas (CU-06).** Solo el administrador. Busca en `GET /api/borrar/personas/{documento}`, muestra la ficha para revisarla y pide confirmación nombrando a la persona; el foco empieza en «Cancelar». Solo «Sí, borrar» llama a `DELETE`. Al terminar recuerda que el historial sigue en el log (CP-05).
+- **Consultar log (CU-07, CP-06).** Para los dos roles. Filtros de tipo, documento, desde y hasta (con calendario), que se combinan, sobre una tabla de 20 en 20 con «Anterior» y «Siguiente». La fecha y hora se muestran como `dd-mmm-yyyy hh:mm:ss` en hora de Bogotá, la misma zona en que ms-log aplica los filtros. La columna Detalle resume el registro (antes → después en las modificaciones, los datos que tenía la persona en los borrados, el motivo de los errores, la pregunta y la respuesta de n8n) y «Ver detalle completo» muestra el JSON. Sin resultados dice «No hay transacciones que cumplan los filtros».
 - **Servicio apagado.** Si un servicio está apagado, Traefik responde 404 sin JSON; `pedirApi` lo convierte en un `ErrorApi` con estado 503 («El servicio no está disponible en este momento»), para no confundirlo con «no hay una persona con ese documento».
 - **Consulta en lenguaje natural.** Abre `N8N_CHAT_URL` en una pestaña nueva (el valor está en `.env.example` y en `n8n/README.md`). Si esa variable está vacía, aparece como «Todavía no está configurado».
 
 ## Para seguir programando
 
 - **Pantallas:** cada una está en `src/paginas/` y su ruta en `src/App.tsx`, protegida por rol con `RutaConRol`.
-- **Llamar a la API:** usa `pedirApi` de `src/api/cliente.ts`. Pone el token (renovándolo si hace falta), vuelve al login con un 401 y lanza `ErrorApi` (con 503 si el servicio está apagado) con `estado`, `message` y `errores: [{ campo, mensaje }]` (el formato de los 400 de la sección 7 de `CONTEXTO.md`), listo para mostrar cada mensaje junto a su campo.
+- **Llamar a la API:** usa `pedirApi` de `src/api/cliente.ts`. Pone el token (renovándolo si hace falta), vuelve al login con un 401 y lanza `ErrorApi` (con 503 si el servicio está apagado) con `estado`, `message` y `errores: [{ campo, mensaje }]` (el formato de los 400), listo para mostrar cada mensaje junto a su campo.
 
   ```ts
   const persona = await pedirApi<Persona>(`/api/consultar/personas/${documento}`);
@@ -33,7 +33,7 @@ Interfaz web en React con Vite y TypeScript, servida con Nginx detrás de Traefi
 - **Persona y fecha:** el tipo `PersonaApi`, los nombres de los campos y `formatearFecha` (yyyy-mm-dd a dd-mmm-yyyy, para mostrar) están en `src/persona/`.
 - **Usuario y estado de Consultar:** `useSesion()` (de `src/auth/ContextoSesion.tsx`) da el usuario (`nombre`, `roles`) y `consultarDisponible`.
 - **Contratos:** la forma de una persona es `PersonaRespuesta` (`libs/common`), con la foto como `data:image/...;base64,...`. El contrato de `GET /api/log` está en `services/ms-log/README.md`.
-- **Estilos:** `src/estilos.css`, con los colores, el espaciado y los radios en variables al principio del archivo, según `docs/rediseno/README.md` (T23). Tipografía Public Sans desde `@fontsource-variable/public-sans`, importada en `main.tsx`.
+- **Estilos:** `src/estilos.css`, con los colores, el espaciado y los radios en variables al principio del archivo. Tipografía Public Sans desde `@fontsource-variable/public-sans`, importada en `main.tsx`.
 - **Marco:** `componentes/Marco.tsx` dibuja la barra lateral con las mismas opciones del menú (`opcionesDelMenu`), así una opción nueva aparece en los dos lugares.
 
 ## Configuración

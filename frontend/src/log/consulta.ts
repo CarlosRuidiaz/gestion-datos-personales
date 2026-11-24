@@ -1,5 +1,5 @@
 /**
- * Filtros y respuesta de GET /api/log (contrato en services/ms-log/README.md y sección 7 de CONTEXTO.md).
+ * Filtros y respuesta de GET /api/log (contrato en services/ms-log/README.md).
  */
 
 export const TIPOS_LOG = ['CREAR', 'MODIFICAR', 'CONSULTAR', 'BORRAR', 'CONSULTA_NL'] as const;

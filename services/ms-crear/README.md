@@ -1,12 +1,12 @@
 # ms-crear
 
-Microservicio NestJS de la opción **Crear Personas** (tarea T06). Ruta en el gateway: `/api/crear`. Usuario de base de datos: `usr_crear`.
+Microservicio NestJS de la opción **Crear Personas**. Ruta en el gateway: `/api/crear`. Usuario de base de datos: `usr_crear`.
 
 | Método y ruta | Rol | Respuestas |
 | --- | --- | --- |
 | `POST /api/crear/personas` | administrador | 201, 400, 401, 403, 409 |
-| `POST /api/crear/personas/importacion/revision` | administrador | 200, 400, 401, 403. Revisa un Excel o CSV y sus fotos sin guardar nada (T30) |
-| `POST /api/crear/personas/importacion` | administrador | 200, 400, 401, 403. Crea las personas válidas del archivo, con sus fotos (T30) |
+| `POST /api/crear/personas/importacion/revision` | administrador | 200, 400, 401, 403. Revisa un Excel o CSV y sus fotos sin guardar nada |
+| `POST /api/crear/personas/importacion` | administrador | 200, 400, 401, 403. Crea las personas válidas del archivo, con sus fotos |
 | `GET /api/crear/docs` | sin token | Documentación OpenAPI (`/api/crear/docs-json` en JSON) |
 
 ## Cómo se usa
@@ -23,7 +23,7 @@ La persona y su registro de log se guardan en una sola transacción. Los intento
 
 Un detalle: el 403 se decide antes de leer el formulario, así que ese registro del log queda sin número de documento.
 
-## Importar personas desde un archivo (T30)
+## Importar personas desde un archivo
 
 Para los datos que manda el profesor: un Excel (`grupo_N.xlsx`, una fila por persona con las columnas del formulario y una columna «Foto») y un zip con las fotos. Se usa desde la pantalla «Crear personas» → «Importar personas desde un archivo».
 
@@ -43,20 +43,20 @@ bash services/ms-crear/verificar.sh
 
 Debe terminar con `TODO BIEN`. Llama a la API por el gateway con tokens reales y revisa la base de datos y el log.
 
-La importación (T30) tiene su propia verificación, con un Excel y un zip ficticios del mismo formato que los del profesor (`archivos-importacion-prueba.mjs`):
+La importación tiene su propia verificación, con un Excel y un zip ficticios del mismo formato que los del profesor (`archivos-importacion-prueba.mjs`):
 
 ```bash
 bash services/ms-crear/verificar-importacion.sh
 ```
 
-## Pendiente en otras tareas
+## Integración
 
-- (T16 hecha: después de crear avisa a n8n con `CREAR`, sin esperar la respuesta. Ver `libs/common/README.md`, sección «Aviso a n8n».)
-- **T18:** pruebas unitarias con Jest.
+- **Aviso a n8n:** después de crear avisa con `CREAR`, sin esperar la respuesta. Ver `libs/common/README.md`, sección «Aviso a n8n».
+- **Pruebas unitarias:** Jest, en `src/*.spec.ts` (`npm test -w ms-crear`).
 
 ## Archivos
 
 - `src/personas.controller.ts`: ruta, permisos y subida de la foto.
 - `src/personas.service.ts`: transacción de creación y log.
-- `src/importacion/`: importar personas desde un archivo (T30): lectura de zip, xlsx y CSV, columnas y valores, revisión e importación.
+- `src/importacion/`: importar personas desde un archivo: lectura de zip, xlsx y CSV, columnas y valores, revisión e importación.
 - `Dockerfile`: se construye con el contexto en la raíz del repositorio.

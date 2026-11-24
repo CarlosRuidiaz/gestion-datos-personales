@@ -52,19 +52,19 @@ Lo que se cambie a mano en la consola no queda en el repositorio. Todo cambio qu
 
 ## Para quien programe contra Keycloak
 
-**Guard JWT de los microservicios (T05):**
+**Guard JWT de los microservicios:**
 
 - Los tokens se firman con RS256. Las llaves se leen de la URL interna (`KEYCLOAK_INTERNAL_URL`), pero el emisor que se valida es el público (`KEYCLOAK_PUBLIC_URL` + `/realms/` + `KEYCLOAK_REALM`). Son dos direcciones distintas a propósito.
 - Los roles están en `realm_access.roles`, por ejemplo `["administrador"]`.
 - El usuario que va al log es `preferred_username`.
 - El token no trae `aud`. No se debe exigir una audiencia; se validan firma, emisor y vigencia.
 
-**Frontend (T11):**
+**Frontend:**
 
 - Cliente `frontend`, sin secreto. PKCE con S256 es obligatorio: sin `code_challenge` Keycloak rechaza el login.
 - Las direcciones de retorno deben empezar por `http://localhost/` o `http://localhost:5173/`. Si el frontend usa otra, hay que agregarla en `realm.json`.
 
-**Pruebas y Postman (T18 y T19):** un token de un usuario de prueba se pide así, sin navegador:
+**Pruebas y Postman:** un token de un usuario de prueba se pide así, sin navegador:
 
 ```bash
 curl -s -X POST http://localhost:8080/realms/gestion-personas/protocol/openid-connect/token \

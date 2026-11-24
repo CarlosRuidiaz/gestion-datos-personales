@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verificación del chat de consulta en lenguaje natural (tarea T15), con Gemini y PostgreSQL reales.
+# Verificación del chat de consulta en lenguaje natural, con Gemini y PostgreSQL reales.
 #
 #   bash n8n/configurar.sh          # antes, una vez
 #   bash n8n/verificar-chat.sh

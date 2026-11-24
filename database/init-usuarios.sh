@@ -1,5 +1,5 @@
 #!/bin/sh
-# Asigna las contraseñas de los usuarios de base de datos por servicio (tarea T03).
+# Asigna las contraseñas de los usuarios de base de datos por servicio.
 # Se ejecuta una sola vez, después de init.sql, cuando el volumen pgdata está vacío.
 # Las contraseñas vienen de las variables DB_PASSWORD_* del archivo .env, que
 # docker-compose.yml pasa al contenedor postgres. Así ninguna queda en el repositorio.

@@ -1,4 +1,4 @@
-/* Interruptor de Consultar (T24). Usa los tokens del rediseño (estilos.css, docs/rediseno/). */
+/* Interruptor de Consultar. Usa las variables de estilos.css. */
 .interruptor-consultar {
   display: flex;
   flex-wrap: wrap;

@@ -1,6 +1,6 @@
 # ms-consultar
 
-Microservicio NestJS de la opción **Consultar Datos Personales** (tarea T08). Ruta en el gateway: `/api/consultar`. Usuario de base de datos: `usr_consultar`.
+Microservicio NestJS de la opción **Consultar Datos Personales**. Ruta en el gateway: `/api/consultar`. Usuario de base de datos: `usr_consultar`.
 
 | Método y ruta | Rol | Respuestas |
 | --- | --- | --- |
@@ -37,10 +37,10 @@ bash services/ms-consultar/verificar.sh
 
 Debe terminar con `TODO BIEN`. Además de la consulta y el log, apaga ms-consultar (comprueba que su ruta desaparece y que ms-modificar sigue buscando), lo vuelve a encender, lo escala a tres réplicas y lo deja otra vez con una.
 
-## Pendiente en otras tareas
+## Integración
 
-- (T13 hecha: la pantalla de consulta del frontend está en `frontend/src/paginas/Consultar.tsx`.)
-- **T18:** pruebas unitarias con Jest.
+- **Pantalla:** la de consulta está en `frontend/src/paginas/Consultar.tsx`.
+- **Pruebas unitarias:** Jest, en `src/*.spec.ts` (`npm test -w ms-consultar`).
 
 ## Archivos
 

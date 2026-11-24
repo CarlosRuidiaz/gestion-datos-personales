@@ -29,7 +29,7 @@ interface Archivos {
 }
 
 /**
- * Importar personas desde un archivo (T30), solo para el administrador. Es parte de la opción Crear:
+ * Importar personas desde un archivo, solo para el administrador. Es parte de la opción Crear:
  * cada persona se crea igual que desde el formulario.
  */
 @ApiTags('importación')

@@ -8,7 +8,7 @@ async function iniciar() {
   configurarAplicacion(app, {
     prefijo: 'api/control',
     titulo: 'ms-control',
-    descripcion: 'Gestión de Datos Personales: apagar y encender el servicio de consulta (T24)',
+    descripcion: 'Gestión de Datos Personales: apagar y encender el servicio de consulta',
   });
   await app.listen(3000);
 }

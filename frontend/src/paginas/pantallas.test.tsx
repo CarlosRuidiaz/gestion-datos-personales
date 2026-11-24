@@ -49,7 +49,7 @@ describe('menú principal', () => {
     expect(dibujar(<Menu />)).toContain('Todavía no está configurado');
   });
 
-  it('el administrador ve el interruptor de Consultar (T24)', () => {
+  it('el administrador ve el interruptor de Consultar', () => {
     sesion = { usuario: { nombre: 'admin.prueba', roles: [Rol.ADMINISTRADOR] }, consultarDisponible: true };
     const html = dibujar(<Menu />);
     expect(html).toContain('data-interruptor="consultar"');

@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "Gestión de Datos Personales · API (T19)",
+    "name": "Gestión de Datos Personales · API",
     "description": "Todos los endpoints de los cinco microservicios, por el gateway, con tokens reales de Keycloak.\n\nCada petición lleva pruebas (pestaña Tests). Correr la colección completa con el Collection Runner, en orden: crea, modifica, consulta, borra y revisa el log de la persona ficticia `{{docPrueba}}`, y al empezar borra la que haya quedado de una corrida anterior.\n\nAntes de correrla: importar también el entorno `gdp-local.postman_environment.json`, elegirlo y llenar las contraseñas y la llave de API desde `.env` (ver tests/postman/README.md).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -2136,7 +2136,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"pregunta\": \"Prueba de la colección de Postman (T19)\",\n  \"respuesta\": \"Respuesta de prueba\",\n  \"resultado\": \"EXITO\"\n}",
+              "raw": "{\n  \"pregunta\": \"Prueba de la colección de Postman\",\n  \"respuesta\": \"Respuesta de prueba\",\n  \"resultado\": \"EXITO\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2205,7 +2205,7 @@
                   "const log = pm.response.json();",
                   "const registros = log.registros || [];",
                   "pm.test(\"está la pregunta de la prueba, con n8n como usuario\", () => {",
-                  "    const r = registros.find(x => x.pregunta === \"Prueba de la colección de Postman (T19)\");",
+                  "    const r = registros.find(x => x.pregunta === \"Prueba de la colección de Postman\");",
                   "    pm.expect(r, \"registro CONSULTA_NL\").to.exist;",
                   "    pm.expect(r.usuario).to.eql(\"n8n\");",
                   "    pm.expect(r.numeroDocumento).to.be.null;",

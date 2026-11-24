@@ -14,7 +14,7 @@ import {
 } from '@gdp/common';
 import { PersonasService } from './personas.service';
 
-/** Lo que hay que escribir para borrar todas las personas (T30). */
+/** Lo que hay que escribir para borrar todas las personas. */
 export const CONFIRMACION_BORRAR_TODAS = 'BORRAR TODAS';
 
 @ApiTags('personas')

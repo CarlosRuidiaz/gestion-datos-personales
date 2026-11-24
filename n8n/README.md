@@ -4,21 +4,21 @@ Consulta en lenguaje natural con RAG (sección 7 del diseño). Corre en el conte
 
 | Archivo | Qué es |
 | --- | --- |
-| `workflows/indexar-persona.json` | Flujo **Indexar persona** (T14): webhook que actualiza el vector de una persona |
-| `workflows/reindexar-todo.json` | Flujo **Reindexar todo** (T14): reconstruye todos los vectores, de ejecución manual |
-| `workflows/chat-consulta.json` | Flujo **Consulta en lenguaje natural** (T15): chat con el agente RAG, publicado |
+| `workflows/indexar-persona.json` | Flujo **Indexar persona**: webhook que actualiza el vector de una persona |
+| `workflows/reindexar-todo.json` | Flujo **Reindexar todo**: reconstruye todos los vectores, de ejecución manual |
+| `workflows/chat-consulta.json` | Flujo **Consulta en lenguaje natural**: chat con el agente RAG, publicado |
 | `configurar.sh` | Carga las credenciales desde `.env`, importa los flujos y publica los que se activan solos |
 | `verificar.sh` | Prueba la indexación de extremo a extremo, con Gemini y PostgreSQL reales |
 | `verificar-chat.sh` | Prueba el chat: barrera de la herramienta SQL, preguntas de la sección 7.1 del diseño, CP-09, CP-10 y registro en ms-log |
 
-La guía completa de instalación y configuración inicial en un equipo limpio está en [`docs/guia-configuracion.md`](../docs/guia-configuracion.md) (tarea T20).
+La guía completa de instalación y configuración inicial en un equipo limpio está en [`docs/guia-configuracion.md`](../docs/guia-configuracion.md).
 
 ## Puesta en marcha
 
 Requisitos en `.env`: `N8N_ENCRYPTION_KEY` (obligatoria, sin ella `docker compose` no arranca), `DB_PASSWORD_N8N`, `GEMINI_API_KEY` (gratis en Google AI Studio), `N8N_LOG_API_KEY` (la misma que usa ms-log) y `N8N_CHAT_URL` (el valor de `.env.example`).
 
 ```bash
-docker compose up -d n8n       # o el arranque completo de CONTEXTO.md
+docker compose up -d n8n       # o el arranque completo del README de la raíz
 bash n8n/configurar.sh         # credenciales, flujos y publicación (se puede repetir)
 bash n8n/verificar.sh          # indexación: termina con TODO BIEN
 bash n8n/verificar-chat.sh     # chat: pide tu cuenta de n8n y termina con TODO BIEN
@@ -51,11 +51,11 @@ Para ejecutar la reindexación completa: ábrela en n8n y pulsa *Execute workflo
 MSYS_NO_PATHCONV=1 docker compose exec -T -e N8N_RUNNERS_BROKER_PORT=5690 n8n n8n execute --id=gdpReindexarTodo
 ```
 
-(El n8n que está corriendo ya ocupa el puerto 5679 de su task runner; la ejecución por línea de comandos necesita otro.) Hay que ejecutarla después de cargar los datos de prueba (T17) y cada vez que el índice quede desactualizado, por ejemplo si n8n estuvo apagado mientras se creaban personas.
+(El n8n que está corriendo ya ocupa el puerto 5679 de su task runner; la ejecución por línea de comandos necesita otro.) Hay que ejecutarla después de cargar los datos de prueba y cada vez que el índice quede desactualizado, por ejemplo si n8n estuvo apagado mientras se creaban personas.
 
 ## Cómo probarlo a mano
 
-Desde T16, crear, modificar o borrar una persona en la aplicación ya avisa a n8n solo (lo comprueba `services/verificar-indexacion.sh`). Para probar el flujo sin la aplicación, el aviso se envía a mano. Desde PowerShell, en la raíz del repositorio:
+Crear, modificar o borrar una persona en la aplicación ya avisa a n8n solo (lo comprueba `services/verificar-indexacion.sh`). Para probar el flujo sin la aplicación, el aviso se envía a mano. Desde PowerShell, en la raíz del repositorio:
 
 0. Configura UTF-8 en la ventana de PowerShell (hay que hacerlo en cada ventana nueva). Windows PowerShell 5.1 pasa el texto a `docker` en ASCII, y sin esta línea la «é» de `Cédula` llega como `?`: PostgreSQL rechaza la fila con `violates check constraint "persona_tipo_doc_chk"`. La segunda parte hace que las tildes de las respuestas se vean bien:
 
@@ -91,7 +91,7 @@ Desde T16, crear, modificar o borrar una persona en la aplicación ya avisa a n8
 
 n8n guarda cada ejecución, con los datos de la persona, en `n8n_data`. Por eso, como en todo el proyecto, solo se usan datos ficticios.
 
-## Contrato del webhook de indexación (para T16)
+## Contrato del webhook de indexación
 
 ms-crear, ms-modificar y ms-borrar avisan después del commit y sin esperar la respuesta (sección 7.2 del diseño). Dentro de la red de Docker la URL es `N8N_WEBHOOK_INDEXACION_URL` (`http://n8n:5678/webhook/indexar-persona`).
 
@@ -126,9 +126,9 @@ Ejemplo del texto que se indexa:
 
 > Pedro Andrés Pérez Gómez. Cédula número 1043123456. Fecha de nacimiento: 05-mar-2003, 23 años. Género: Masculino. Correo: pedro@ejemplo.com. Celular: 3001234567.
 
-La metadata de cada vector tiene `numero_documento`, `tipo_documento`, `nombre_completo`, `fecha_nacimiento` (dd-mmm-yyyy), `edad`, `genero`, `correo`, `celular` e `indexado_en` (momento de la indexación, en ISO 8601), todos como texto. La edad queda fija en el momento de indexar; las preguntas exactas sobre edades las resuelve la herramienta SQL de T15 sobre `vista_personas`.
+La metadata de cada vector tiene `numero_documento`, `tipo_documento`, `nombre_completo`, `fecha_nacimiento` (dd-mmm-yyyy), `edad`, `genero`, `correo`, `celular` e `indexado_en` (momento de la indexación, en ISO 8601), todos como texto. La edad queda fija en el momento de indexar; las preguntas exactas sobre edades las resuelve la herramienta SQL del chat sobre `vista_personas`.
 
-## El chat (T15)
+## El chat
 
 URL: <http://localhost:5678/webhook/6f1c2a10-0015-4a00-8000-000000000001/chat>. El id del webhook es fijo, así que la URL es la misma en todos los equipos. Es la que va en `N8N_CHAT_URL` y la que abre la opción del menú de la aplicación. Antes hay que iniciar sesión con la cuenta de administrador de n8n.
 
@@ -145,7 +145,7 @@ URL: <http://localhost:5678/webhook/6f1c2a10-0015-4a00-8000-000000000001/chat>. 
 
 El registro va a `POST http://ms-log:3000/api/log/consulta-nl` con la credencial `gdpCredMsLogKey1`. La pregunta se recorta a 4000 caracteres y la respuesta a 20000, y la sesión del chat va en `detalle.sesion`. Si ms-log no responde, el flujo lo intenta tres veces y después entrega la respuesta de todos modos: la consulta ya se hizo y el usuario no debe quedarse sin ella.
 
-Google ya retiró `gemini-2.5-flash-lite` para llaves nuevas (el 2026-11-23 respondía 404 y el chat decía que el modelo no respondió); por eso se usa `gemini-3.5-flash-lite`. Si vuelve a pasar, se cambia en el nodo **Modelo Gemini** por el Flash-Lite vigente (lista en Google AI Studio), se exporta el flujo y se registra la decisión en `CONTEXTO.md`.
+Google ya retiró `gemini-2.5-flash-lite` para llaves nuevas (el 2026-11-23 respondía 404 y el chat decía que el modelo no respondió); por eso se usa `gemini-3.5-flash-lite`. Si vuelve a pasar, se cambia en el nodo **Modelo Gemini** por el Flash-Lite vigente (lista en Google AI Studio) y se exporta el flujo.
 
 Para probar un modelo de chat directamente, sin n8n (no imprime la llave):
 
