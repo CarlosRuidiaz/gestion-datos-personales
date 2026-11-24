@@ -6,27 +6,31 @@ Consulta en lenguaje natural con RAG (sección 7 del diseño). Corre en el conte
 | --- | --- |
 | `workflows/indexar-persona.json` | Flujo **Indexar persona** (T14): webhook que actualiza el vector de una persona |
 | `workflows/reindexar-todo.json` | Flujo **Reindexar todo** (T14): reconstruye todos los vectores, de ejecución manual |
+| `workflows/chat-consulta.json` | Flujo **Consulta en lenguaje natural** (T15): chat con el agente RAG, publicado |
 | `configurar.sh` | Carga las credenciales desde `.env`, importa los flujos y publica los que se activan solos |
-| `verificar.sh` | Prueba los dos flujos de extremo a extremo, con Gemini y PostgreSQL reales |
+| `verificar.sh` | Prueba la indexación de extremo a extremo, con Gemini y PostgreSQL reales |
+| `verificar-chat.sh` | Prueba el chat: barrera de la herramienta SQL, preguntas de la sección 7.1 del diseño, CP-09, CP-10 y registro en ms-log |
 
-El flujo del chat (agente, herramientas, memoria y registro en ms-log) es la tarea **T15**, y la guía completa de configuración inicial en un equipo limpio es la **T20**.
+La guía completa de configuración inicial en un equipo limpio es la tarea **T20**.
 
 ## Puesta en marcha
 
-Requisitos en `.env`: `N8N_ENCRYPTION_KEY` (obligatoria, sin ella `docker compose` no arranca), `DB_PASSWORD_N8N` y `GEMINI_API_KEY` (gratis en Google AI Studio).
+Requisitos en `.env`: `N8N_ENCRYPTION_KEY` (obligatoria, sin ella `docker compose` no arranca), `DB_PASSWORD_N8N`, `GEMINI_API_KEY` (gratis en Google AI Studio), `N8N_LOG_API_KEY` (la misma que usa ms-log) y `N8N_CHAT_URL` (el valor de `.env.example`).
 
 ```bash
 docker compose up -d n8n       # o el arranque completo de CONTEXTO.md
 bash n8n/configurar.sh         # credenciales, flujos y publicación (se puede repetir)
-bash n8n/verificar.sh          # termina con TODO BIEN
+bash n8n/verificar.sh          # indexación: termina con TODO BIEN
+bash n8n/verificar-chat.sh     # chat: pide tu cuenta de n8n y termina con TODO BIEN
 ```
 
-`configurar.sh` crea dos credenciales con id fijo, que los flujos usan por ese id:
+`configurar.sh` crea tres credenciales con id fijo, que los flujos usan por ese id:
 
 | Credencial | Id | Datos |
 | --- | --- | --- |
 | PostgreSQL (usr_n8n) | `gdpCredPostgres1` | host `postgres`, base `POSTGRES_DB`, usuario `usr_n8n`, contraseña `DB_PASSWORD_N8N` |
 | Google Gemini | `gdpCredGemini001` | `GEMINI_API_KEY` |
+| Llave de ms-log | `gdpCredMsLogKey1` | cabecera `X-API-Key` con `N8N_LOG_API_KEY` |
 
 Los valores llegan al contenedor por la entrada estándar y n8n los guarda cifrados con `N8N_ENCRYPTION_KEY` en el volumen `n8n_data`. Ni los flujos exportados ni el repositorio tienen contraseñas o llaves; `verificar.sh` lo comprueba. Si cambias una contraseña en `.env`, vuelve a ejecutar `configurar.sh`. No cambies `N8N_ENCRYPTION_KEY` después de configurar: n8n dejaría de poder leer sus credenciales y habría que borrar el volumen `n8n_data`.
 
@@ -38,7 +42,7 @@ La primera vez que abres <http://localhost:5678>, n8n pide crear la cuenta de ad
 - **El correo solo sirve para iniciar sesión.** n8n no envía ningún correo de confirmación (no tiene correo configurado). Puedes usar tu correo institucional u otro que recuerdes. La contraseña pide al menos 8 caracteres, con un número y una mayúscula.
 - Después del registro n8n puede ofrecer una encuesta y una licencia gratuita por correo: las dos son opcionales y se pueden saltar.
 - Si olvidas la contraseña: `docker compose exec n8n n8n user-management:reset` borra la cuenta (los flujos y las credenciales se conservan) y vuelves a crearla en el navegador.
-- Los flujos importados por `configurar.sh` aparecen en esa cuenta, en *Overview*. Para T15, el chat de n8n se protege con esta autenticación (sección 7.1 del diseño).
+- Los flujos importados por `configurar.sh` aparecen en esa cuenta, en *Overview*. El chat se protege con esta cuenta (sección 7.1 del diseño): para usarlo hay que haber iniciado sesión en <http://localhost:5678> en el mismo navegador.
 - Con `docker compose down -v` se borra el volumen `n8n_data` y con él la cuenta, las credenciales y los flujos: hay que volver a crear la cuenta y ejecutar `configurar.sh`.
 
 Para ejecutar la reindexación completa: ábrela en n8n y pulsa *Execute workflow*, o desde la terminal:
@@ -124,11 +128,55 @@ Ejemplo del texto que se indexa:
 
 La metadata de cada vector tiene `numero_documento`, `tipo_documento`, `nombre_completo`, `fecha_nacimiento` (dd-mmm-yyyy), `edad`, `genero`, `correo`, `celular` e `indexado_en` (momento de la indexación, en ISO 8601), todos como texto. La edad queda fija en el momento de indexar; las preguntas exactas sobre edades las resuelve la herramienta SQL de T15 sobre `vista_personas`.
 
-## Para quien haga T15
+## El chat (T15)
 
-- Para la búsqueda vectorial, usa el nodo Postgres PGVector Store con la credencial `gdpCredPostgres1`, la tabla `persona_embedding`, las columnas `id`, `embedding`, `text` y `metadata`, la opción *Skip Table Initialization* activada (usr_n8n no puede crear la extensión) y el mismo modelo de embeddings, `models/gemini-embedding-001`.
-- Para la herramienta SQL, la misma credencial: usr_n8n solo puede leer `vista_personas`.
-- Agrega el id de tu flujo a `PUBLICAR` en `configurar.sh` y exporta el flujo a `workflows/` sin credenciales (solo con su id).
+URL: <http://localhost:5678/webhook/6f1c2a10-0015-4a00-8000-000000000001/chat>. El id del webhook es fijo, así que la URL es la misma en todos los equipos. Es la que va en `N8N_CHAT_URL` y la que abre la opción del menú de la aplicación. Antes hay que iniciar sesión con la cuenta de administrador de n8n.
+
+| Nodo | Qué hace |
+| --- | --- |
+| **Chat** | Chat Trigger con la página de chat de n8n, protegida con la cuenta de n8n. Responde con lo que devuelve el último nodo que se ejecuta |
+| **Agente** | AI Agent con las instrucciones de sistema de la sección 7.1 del diseño, más indicaciones para escribir SQL, la fecha de hoy y el formato de cantidades y fechas. Como máximo 8 pasos por pregunta |
+| **Modelo Gemini** | `models/gemini-3.5-flash-lite`, temperatura 0 (Flash-Lite por su cuota diaria, sección 12 del diseño) |
+| **Memoria de sesión** | Las últimas 10 interacciones de cada sesión del chat, para preguntas como «¿y el mayor?». Vive en la memoria de n8n: se pierde al reiniciarlo |
+| **consultar_personas** | Herramienta SQL con `usr_n8n`. Ver «Barrera de la herramienta SQL» |
+| **buscar_personas_similares** | Herramienta vectorial: nodo PGVector sobre `persona_embedding` con `models/gemini-embedding-001`. Devuelve las 5 personas más parecidas con su metadata |
+| **Registrar en el log** y **Responder** | Envían a ms-log la pregunta, la respuesta y `EXITO`, y devuelven la respuesta al chat |
+| **Preparar error**, **Registrar error en el log** y **Responder error** | Si el modelo falla (cuota agotada, llave inválida, sin internet), registran `ERROR` con el motivo y le piden al usuario que intente más tarde |
+
+El registro va a `POST http://ms-log:3000/api/log/consulta-nl` con la credencial `gdpCredMsLogKey1`. La pregunta se recorta a 4000 caracteres y la respuesta a 20000, y la sesión del chat va en `detalle.sesion`. Si ms-log no responde, el flujo lo intenta tres veces y después entrega la respuesta de todos modos: la consulta ya se hizo y el usuario no debe quedarse sin ella.
+
+Google ya retiró `gemini-2.5-flash-lite` para llaves nuevas (el 2026-11-23 respondía 404 y el chat decía que el modelo no respondió); por eso se usa `gemini-3.5-flash-lite`. Si vuelve a pasar, se cambia en el nodo **Modelo Gemini** por el Flash-Lite vigente (lista en Google AI Studio), se exporta el flujo y se registra la decisión en `CONTEXTO.md`.
+
+Para probar un modelo de chat directamente, sin n8n (no imprime la llave):
+
+```bash
+curl -s "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=$(grep ^GEMINI_API_KEY= .env | cut -d= -f2-)" -H 'Content-Type: application/json' -d '{"contents":[{"parts":[{"text":"hola"}]}]}'
+```
+
+Para listar los modelos disponibles con tu llave, cambia la URL por `https://generativelanguage.googleapis.com/v1beta/models?key=...` y filtra con `grep '"name"'`.
+
+### Barrera de la herramienta SQL
+
+El modelo escribe la consulta, pero esta no llega tal cual a PostgreSQL. Una expresión en el campo *Query* del nodo **consultar_personas** solo deja pasar una sentencia que cumpla todo esto:
+
+- empieza por `SELECT` o `WITH`;
+- nombra `vista_personas`;
+- no tiene punto y coma en medio;
+- no nombra `persona_embedding`, `log_transaccion`, `information_schema` ni funciones `pg_*`.
+
+La sentencia se ejecuta como subconsulta: `SELECT * FROM (consulta) AS resultado LIMIT 100`. Sin punto y coma no se pueden encadenar sentencias, y PostgreSQL no admite `DELETE`, `INSERT` ni `UPDATE` dentro de una subconsulta. Lo que no cumple se cambia por una fila con la columna `error`, que el agente lee para corregirse.
+
+La barrera hace falta porque `usr_n8n` es dueño de `persona_embedding`: sin ella, el modelo podría borrar el índice. Sobre `persona` y el log, la protección sigue siendo la base de datos, porque `usr_n8n` solo lee `vista_personas` (CP-10). `verificar-chat.sh` prueba la barrera sin el modelo: ejecuta la expresión del flujo exportado.
+
+### Probar el chat a mano
+
+1. Inicia sesión en <http://localhost:5678>.
+2. Abre la URL del chat, o la opción «Consulta en lenguaje natural» del menú de la aplicación.
+3. Prueba las preguntas de la sección 7.1 del diseño: «¿Cuál es el empleado más joven que se ha registrado?», luego «¿Y el mayor?», «¿Cuántas personas tienen tarjeta de identidad?», «¿Hay alguien que se llame parecido a Andrea Gomes?» y «¿Cuál es el salario de Pedro Pérez?».
+4. En la aplicación, abre Consultar log con el tipo `CONSULTA_NL`: cada pregunta aparece con su respuesta.
+5. En n8n, abre el flujo **Consulta en lenguaje natural** y su pestaña *Executions*: ahí se ve qué herramienta eligió el agente y la consulta SQL que escribió.
+
+Para ver el camino de error: cambia `GEMINI_API_KEY` en `.env` por un valor inválido y ejecuta `configurar.sh`. Haz una pregunta: el chat debe pedirte que intentes más tarde, y en el log debe quedar `ERROR`. Después vuelve a poner la llave buena y ejecuta `configurar.sh` otra vez.
 
 ## Si cambias un flujo
 

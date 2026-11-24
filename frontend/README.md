@@ -14,7 +14,7 @@ Interfaz web en React con Vite y TypeScript, servida con Nginx detrás de Traefi
 - **Borrar personas (CU-06, T13).** Solo el administrador. Busca en `GET /api/borrar/personas/{documento}`, muestra la ficha para revisarla y pide confirmación nombrando a la persona; el foco empieza en «Cancelar». Solo «Sí, borrar» llama a `DELETE`. Al terminar recuerda que el historial sigue en el log (CP-05).
 - **Consultar log (CU-07, CP-06, T13).** Para los dos roles. Filtros de tipo, documento, desde y hasta (con calendario), que se combinan, sobre una tabla de 20 en 20 con «Anterior» y «Siguiente». La fecha y hora se muestran como `dd-mmm-yyyy hh:mm:ss` en hora de Bogotá, la misma zona en que ms-log aplica los filtros. La columna Detalle resume el registro (antes → después en las modificaciones, los datos que tenía la persona en los borrados, el motivo de los errores, la pregunta y la respuesta de n8n) y «Ver detalle completo» muestra el JSON. Sin resultados dice «No hay transacciones que cumplan los filtros».
 - **Servicio apagado.** Si un servicio está apagado, Traefik responde 404 sin JSON; `pedirApi` lo convierte en un `ErrorApi` con estado 503 («El servicio no está disponible en este momento»), para no confundirlo con «no hay una persona con ese documento».
-- **Consulta en lenguaje natural.** Abre `N8N_CHAT_URL` en una pestaña nueva. Mientras esa variable esté vacía (hasta T15), aparece como «Todavía no está configurado».
+- **Consulta en lenguaje natural.** Abre `N8N_CHAT_URL` en una pestaña nueva (el valor está en `.env.example` y en `n8n/README.md`). Si esa variable está vacía, aparece como «Todavía no está configurado».
 
 ## Para seguir programando
 
