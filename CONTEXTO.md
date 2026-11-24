@@ -181,7 +181,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**, **Descartada**.
 | T20 | Guía de configuración inicial de n8n y prueba completa en un equipo limpio | docs/ | T15, T16, T17 | Hecha | Daniel Mendez | feat/T20-guia |
 | T21 | Opcional: despliegue en Azure for Students | | T20 | Descartada | | |
 | T22 | Propuesta de rediseño visual del frontend: paleta, tipografía, bocetos y guía de herramientas | docs/rediseno/ | T13 | Hecha | Carlos Ruidiaz | feat/T22-propuesta-rediseno |
-| T23 | Aplicar el rediseño visual al frontend según `docs/rediseno/` | frontend/ | T22 | Pendiente | | |
+| T23 | Aplicar el rediseño visual al frontend según `docs/rediseno/` | frontend/ | T22 | En curso | Claudia Elias | feat/T23-rediseno-visual |
 
 Después de T05, el trabajo se puede repartir en cuatro frentes paralelos con poco cruce: microservicios (T06 a T10), frontend (T11 a T13), n8n (T14 a T16) y calidad (T17 a T19).
 
