@@ -3,7 +3,7 @@
 > Este es el documento de contexto del repositorio. Cualquier integrante del equipo, o la IA que use, debe leerlo completo antes de trabajar.
 > Uso: haz `git pull`, abre tu IA en la carpeta del repositorio y pídele «Lee CONTEXTO.md y dime en qué estado está el proyecto y qué me toca hacer».
 
-**Última actualización:** 2026-11-24, por Carlos Ruidiaz (tarea T22)
+**Última actualización:** 2026-11-23, por Carlos Ruidiaz (T21 descartada)
 **Fase actual:** Fase 2 · Frentes paralelos (microservicios, frontend, n8n y calidad)
 
 ---
@@ -126,7 +126,7 @@ Configuración inicial de n8n (una sola vez): `bash n8n/configurar.sh` carga las
 - T15: flujo `Consulta en lenguaje natural` (`n8n/workflows/chat-consulta.json`, id `gdpChatConsulta1`, publicado): Chat Trigger protegido con la cuenta de n8n y con webhook fijo, AI Agent con Gemini `gemini-3.5-flash-lite`, memoria de sesión de 10 interacciones y dos herramientas: `consultar_personas` (SQL sobre `vista_personas`, con una barrera que solo deja pasar un `SELECT` y lo ejecuta como subconsulta, ver sección 7) y `buscar_personas_similares` (PGVector con `gemini-embedding-001`). Cada consulta queda en ms-log como `CONSULTA_NL`, con éxito o con error. `configurar.sh` crea la credencial `gdpCredMsLogKey1` con `N8N_LOG_API_KEY`, publica el chat y comprueba que quedó activo, y `.env.example` trae el valor de `N8N_CHAT_URL`. `n8n/verificar-chat.sh` lo comprueba (CP-09 y CP-10, que la colección de Postman no cubre): barrera SQL, las preguntas de la sección 7.1 del diseño, memoria, que el chat no pueda borrar y el registro en el log. Probado el 2026-11-23 con Gemini y PostgreSQL reales: todas las comprobaciones sin fallos, cada respuesta en menos de 11 s. Cómo está armado y cómo probarlo a mano: `n8n/README.md`.
 
 - T22: propuesta de rediseño visual del frontend en `docs/rediseno/`: `README.md` con el diagnóstico de lo que hoy se ve genérico, el sistema visual (paleta en verde petróleo con contraste WCAG AA medido, tipografía Public Sans servida con `@fontsource-variable/public-sans`, escala de espaciado, radios y botones), cómo debe quedar cada pantalla respetando el menú principal y la distribución del prototipo del enunciado, las herramientas, los pasos de la T23 y una lista para comprobar el resultado. `boceto.html` (se abre con doble clic) muestra la paleta, la tipografía y cuatro pantallas con datos ficticios; revisado en el navegador a 1280 px y a 375 px, sin desplazamiento horizontal. La skill `frontend-design` de Anthropic (Apache 2.0) quedó en `.claude/skills/frontend-design/`: Claude Code la carga sola y las demás IA deben leer su `SKILL.md`. No cambia código de la aplicación: eso es la T23, libre para cualquiera.
-**Todavía no existe:** nada del núcleo del sistema. Solo queda la entrega (T20 y T21). La base de datos arranca vacía: los datos de prueba se cargan con `bash database/cargar-datos-prueba.sh` (T17), y después hay que ejecutar «Reindexar todo» en n8n.
+**Todavía no existe:** nada del núcleo del sistema. Solo queda el rediseño visual (T23); T21 se descartó. La base de datos arranca vacía: los datos de prueba se cargan con `bash database/cargar-datos-prueba.sh` (T17), y después hay que ejecutar «Reindexar todo» en n8n.
 
 **En curso:** ver la columna Estado del tablero.
 
@@ -151,11 +151,11 @@ Configuración inicial de n8n (una sola vez): `bash n8n/configurar.sh` carga las
 
 La siguiente tarea a tomar es la primera del tablero que esté **Pendiente**, sin responsable y con todas sus dependencias en **Hecha**. Si hay varias disponibles, se prefiere la de la fase más temprana. La IA debe calcular esto leyendo el tablero, y no adivinarlo.
 
-Fases: Fase 0, base del repositorio (T01 y T02). Fase 1, cimientos (T03 a T05). Fase 2, frentes paralelos (T06 a T19). Fase 3, integración y entrega (T20 y T21).
+Fases: Fase 0, base del repositorio (T01 y T02). Fase 1, cimientos (T03 a T05). Fase 2, frentes paralelos (T06 a T19). Fase 3, integración y entrega (T20; T21 descartada). Fase 4, rediseño visual (T22 y T23).
 
 ## 6. Tablero de tareas
 
-Estados posibles: **Pendiente**, **En curso**, **Hecha**.
+Estados posibles: **Pendiente**, **En curso**, **Hecha**, **Descartada**.
 
 | ID | Tarea | Carpeta principal | Depende de | Estado | Responsable | Rama |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -179,7 +179,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 | T18 | Pruebas unitarias y de integración (Jest) | services/, libs/ | T06 a T10 | Hecha | Juan Fernández | feat/T18-pruebas-jest |
 | T19 | Colección de Postman con todos los endpoints y permisos | tests/postman/ | T06 a T10 | Hecha | Juan Fernández | feat/T19-coleccion-postman |
 | T20 | Guía de configuración inicial de n8n y prueba completa en un equipo limpio | docs/ | T15, T16, T17 | Hecha | Daniel Mendez | feat/T20-guia |
-| T21 | Opcional: despliegue en Azure for Students | | T20 | Pendiente | | |
+| T21 | Opcional: despliegue en Azure for Students | | T20 | Descartada | | |
 | T22 | Propuesta de rediseño visual del frontend: paleta, tipografía, bocetos y guía de herramientas | docs/rediseno/ | T13 | Hecha | Carlos Ruidiaz | feat/T22-propuesta-rediseno |
 | T23 | Aplicar el rediseño visual al frontend según `docs/rediseno/` | frontend/ | T22 | Pendiente | | |
 
@@ -204,6 +204,7 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 
 | Fecha | Decisión | Motivo | Quién |
 | --- | --- | --- | --- |
+| 2026-11-23 | Se descarta T21 (despliegue opcional en Azure for Students). El sistema se entrega para ejecutarse en local con Docker Compose | Era opcional en el plan y el equipo decidió no hacerla | Carlos Ruidiaz |
 | 2026-11-24 | El rediseño visual (T23) se hace con CSS propio en `estilos.css`, sin Tailwind ni bibliotecas de componentes, con una sola tipografía (Public Sans) servida desde la propia aplicación, y conserva el menú principal y la distribución del formulario del enunciado. Se descartó scroll-craft | El cambio es solo de estilo y no justifica reescribir el marcado. Las fuentes locales evitan depender de internet y de terceros. scroll-craft está hecha para páginas de presentación con animaciones al desplazarse, no para una herramienta de formularios y tablas | Carlos Ruidiaz |
 | 2026-11-23 | Las pruebas unitarias de los servicios usan una base de datos falsa (`services/pruebas-comunes.ts`) y cargan `@gdp/common` desde `libs/common/src` con `moduleNameMapper` y `paths` (`services/tsconfig.test.json`), así `npm test` no necesita compilar la librería ni contenedores. Los `tsconfig.json` de los servicios excluyen `src/**/*.spec.ts`. No se agregaron dependencias: Jest, ts-jest y los tipos ya los instala `libs/common` (el `package-lock.json` no cambia) | Que cualquiera pueda correr las pruebas con `npm install && npm test`, y que la compilación de Docker (`tsc` con `types: ["node"]`) no falle por los archivos de prueba. Las pruebas de integración con la base de datos real siguen en `libs/common`, que ya las tenía desde T05 | Juan Fernández |
 | 2026-11-23 | La herramienta SQL del agente no ejecuta tal cual la consulta del modelo. Una expresión del nodo `consultar_personas` solo deja pasar una sentencia `SELECT` o `WITH` que nombre `vista_personas`, sin punto y coma y sin `persona_embedding`, `log_transaccion`, `information_schema` ni `pg_*`, y la ejecuta como `SELECT * FROM (consulta) AS resultado LIMIT 100`. Si la sentencia no cumple, la herramienta devuelve una fila `error` | `usr_n8n` es dueño de `persona_embedding` (decisión de T03), así que la base de datos sola no le impide al modelo borrar el índice vectorial. Sin punto y coma no se pueden encadenar sentencias, y PostgreSQL no admite DML dentro de una subconsulta. `persona` y el log siguen protegidos por los permisos (CP-10) | Daniel Mendez |
