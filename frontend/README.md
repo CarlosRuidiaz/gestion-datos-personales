@@ -33,7 +33,8 @@ Interfaz web en React con Vite y TypeScript, servida con Nginx detrás de Traefi
 - **Persona y fecha:** el tipo `PersonaApi`, los nombres de los campos y `formatearFecha` (yyyy-mm-dd a dd-mmm-yyyy, para mostrar) están en `src/persona/`.
 - **Usuario y estado de Consultar:** `useSesion()` (de `src/auth/ContextoSesion.tsx`) da el usuario (`nombre`, `roles`) y `consultarDisponible`.
 - **Contratos:** la forma de una persona es `PersonaRespuesta` (`libs/common`), con la foto como `data:image/...;base64,...`. El contrato de `GET /api/log` está en `services/ms-log/README.md`.
-- **Estilos:** `src/estilos.css`, con los colores en variables.
+- **Estilos:** `src/estilos.css`, con los colores, el espaciado y los radios en variables al principio del archivo, según `docs/rediseno/README.md` (T23). Tipografía Public Sans desde `@fontsource-variable/public-sans`, importada en `main.tsx`.
+- **Marco:** `componentes/Marco.tsx` dibuja la barra lateral con las mismas opciones del menú (`opcionesDelMenu`), así una opción nueva aparece en los dos lugares.
 
 ## Configuración
 

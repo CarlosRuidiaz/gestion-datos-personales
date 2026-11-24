@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useSesion } from '../auth/ContextoSesion';
 import { BusquedaPorDocumento } from '../componentes/BusquedaPorDocumento';
-import { FichaPersona, nombreCompleto } from '../persona/FichaPersona';
+import { FichaPersona } from '../persona/FichaPersona';
 import type { PersonaApi } from '../persona/tipos';
 
 /**
@@ -16,7 +16,7 @@ export function Consultar() {
 
   if (consultarDisponible === false) {
     return (
-      <section className="aviso">
+      <section className="aviso no-disponible">
         <h1>Consultar no está disponible</h1>
         <p>El servicio de consulta está apagado en este momento. Las demás opciones siguen funcionando.</p>
         <Link to="/" className="boton">
@@ -31,9 +31,6 @@ export function Consultar() {
       <h1>Consultar datos personales</h1>
       {persona ? (
         <>
-          <p className="nota">
-            Ficha de <strong>{nombreCompleto(persona)}</strong> ({persona.numeroDocumento}).
-          </p>
           <FichaPersona persona={persona} />
           <div className="acciones">
             <button type="button" className="boton" onClick={() => setPersona(null)}>

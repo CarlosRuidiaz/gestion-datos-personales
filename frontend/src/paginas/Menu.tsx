@@ -1,6 +1,6 @@
 import { Link } from 'react-router';
 import { useSesion } from '../auth/ContextoSesion';
-import { Rol } from '../auth/roles';
+import { nombreDelRol, Rol } from '../auth/roles';
 import { InterruptorConsultar } from '../componentes/InterruptorConsultar';
 import { configuracion } from '../config';
 import { opcionesDelMenu, type OpcionDelMenu } from '../menu/opciones';
@@ -11,7 +11,7 @@ const NOTA: Record<OpcionDelMenu['estado'], string> = {
   'sin-configurar': 'Todavía no está configurado',
 };
 
-/** Menú principal: solo las opciones del rol (sección 8.2 del diseño). */
+/** Menú principal: solo las opciones del rol (sección 8.2 del diseño), como un índice en filas. */
 export function Menu() {
   const { usuario, consultarDisponible, revisarConsultar } = useSesion();
   const opciones = opcionesDelMenu(usuario.roles, {
@@ -32,10 +32,13 @@ export function Menu() {
   return (
     <section>
       <h1>Menú principal</h1>
-      <ul className="menu">
+      <p className="bajada">
+        Hola, {usuario.nombre}. Tienes el rol {nombreDelRol(usuario.roles)}.
+      </p>
+      <ul className="indice">
         {opciones.map((opcion) => (
           <li key={opcion.clave}>
-            <Tarjeta opcion={opcion} />
+            <Fila opcion={opcion} />
           </li>
         ))}
       </ul>
@@ -46,32 +49,36 @@ export function Menu() {
   );
 }
 
-function Tarjeta({ opcion }: { opcion: OpcionDelMenu }) {
+function Fila({ opcion }: { opcion: OpcionDelMenu }) {
   const contenido = (
     <>
       <span className="titulo">{opcion.titulo}</span>
       <span className="descripcion">{opcion.descripcion}</span>
       {opcion.estado !== 'disponible' && <span className="estado">{NOTA[opcion.estado]}</span>}
-      {opcion.externa && opcion.estado === 'disponible' && <span className="estado">Se abre en una pestaña nueva</span>}
+      {opcion.externa && opcion.estado === 'disponible' && (
+        <span className="estado">
+          Se abre en una pestaña nueva <span aria-hidden="true">↗</span>
+        </span>
+      )}
     </>
   );
 
   if (opcion.estado !== 'disponible') {
     return (
-      <div className="tarjeta deshabilitada" aria-disabled="true" data-opcion={opcion.clave}>
+      <div className="opcion deshabilitada" aria-disabled="true" data-opcion={opcion.clave}>
         {contenido}
       </div>
     );
   }
   if (opcion.externa) {
     return (
-      <a className="tarjeta" href={opcion.destino} target="_blank" rel="noopener noreferrer" data-opcion={opcion.clave}>
+      <a className="opcion" href={opcion.destino} target="_blank" rel="noopener noreferrer" data-opcion={opcion.clave}>
         {contenido}
       </a>
     );
   }
   return (
-    <Link className="tarjeta" to={opcion.destino} data-opcion={opcion.clave}>
+    <Link className="opcion" to={opcion.destino} data-opcion={opcion.clave}>
       {contenido}
     </Link>
   );
