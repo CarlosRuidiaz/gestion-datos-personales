@@ -129,11 +129,11 @@ export function ConfirmacionBorrado({
         log.
       </p>
       <div className="acciones">
-        <button type="button" className="boton peligro" onClick={alConfirmar} disabled={borrando}>
-          {borrando ? 'Borrando…' : 'Sí, borrar'}
-        </button>
         <button type="button" className="boton secundario" onClick={alCancelar} disabled={borrando} ref={cancelar}>
           Cancelar
+        </button>
+        <button type="button" className="boton peligro" onClick={alConfirmar} disabled={borrando}>
+          {borrando ? 'Borrando…' : 'Sí, borrar'}
         </button>
       </div>
     </div>

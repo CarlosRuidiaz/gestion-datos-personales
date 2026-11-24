@@ -2,6 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { iniciarSesion, usuarioActual } from './auth/sesion';
+import '@fontsource-variable/public-sans/wght.css';
+import '@fontsource-variable/public-sans/wght-italic.css';
 import './estilos.css';
 
 const raiz = createRoot(document.getElementById('raiz')!);
