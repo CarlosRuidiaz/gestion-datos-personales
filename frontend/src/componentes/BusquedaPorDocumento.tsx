@@ -54,7 +54,6 @@ export function BusquedaPorDocumento({
           value={documento}
           onChange={(e) => setDocumento(e.target.value)}
           inputMode="numeric"
-          maxLength={10}
           autoComplete="off"
           autoFocus
           aria-invalid={error ? true : undefined}

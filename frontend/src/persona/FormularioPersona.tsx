@@ -3,7 +3,6 @@ import { formatearFecha, hoyIso, parsearFecha } from './fecha';
 import {
   CAMPOS,
   GENEROS,
-  LONGITUD,
   PERSONA_VACIA,
   TIPOS_DOCUMENTO,
   type CampoConError,
@@ -141,7 +140,7 @@ export function FormularioPersona({
 
             <Campo etiqueta="Nro. Documento" para={`${id}-numeroDocumento`} obligatorio={modo === 'crear'} corto>
               {modo === 'crear' ? (
-                <input {...texto('numeroDocumento')} inputMode="numeric" maxLength={LONGITUD.numeroDocumento} autoComplete="off" />
+                <input {...texto('numeroDocumento')} inputMode="numeric" autoComplete="off" />
               ) : (
                 <input {...campo('numeroDocumento')} value={valores.numeroDocumento} readOnly aria-readonly="true" />
               )}
@@ -150,17 +149,17 @@ export function FormularioPersona({
             </Campo>
 
             <Campo etiqueta="Primer nombre" para={`${id}-primerNombre`} obligatorio>
-              <input {...texto('primerNombre')} maxLength={LONGITUD.nombre} autoComplete="off" />
+              <input {...texto('primerNombre')} autoComplete="off" />
               {mensaje('primerNombre')}
             </Campo>
 
             <Campo etiqueta="Segundo nombre" para={`${id}-segundoNombre`}>
-              <input {...texto('segundoNombre')} maxLength={LONGITUD.nombre} autoComplete="off" />
+              <input {...texto('segundoNombre')} autoComplete="off" />
               {mensaje('segundoNombre')}
             </Campo>
 
             <Campo etiqueta="Apellidos" para={`${id}-apellidos`} obligatorio ancho>
-              <input {...texto('apellidos')} maxLength={LONGITUD.apellidos} autoComplete="off" />
+              <input {...texto('apellidos')} autoComplete="off" />
               {mensaje('apellidos')}
             </Campo>
 
@@ -233,12 +232,12 @@ export function FormularioPersona({
 
         <div className="contacto">
           <Campo etiqueta="Correo electrónico" para={`${id}-correo`} obligatorio>
-            <input {...texto('correo')} type="email" maxLength={LONGITUD.correo} autoComplete="off" />
+            <input {...texto('correo')} type="email" autoComplete="off" />
             {mensaje('correo')}
           </Campo>
 
           <Campo etiqueta="Celular" para={`${id}-celular`} obligatorio corto>
-            <input {...texto('celular')} inputMode="numeric" maxLength={LONGITUD.celular} autoComplete="off" />
+            <input {...texto('celular')} inputMode="numeric" autoComplete="off" />
             {mensaje('celular')}
           </Campo>
         </div>

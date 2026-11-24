@@ -24,8 +24,8 @@ Lo que sigue lo contó un compañero de otro grupo que ya presentó (2026-11-23)
 | --- | --- | --- |
 | Interruptor de Consultar en la aplicación | T24 | Hecho |
 | Script para dejar la base solo con los datos del profesor | T25 | Script hecho. Falta poner los datos del correo en `database/datos-profesor.sql` |
-| Mensaje de error visible para nombres de más de 30 caracteres | T26 | Ver tablero |
-| Rediseño visual | T23 | Ver tablero (no es requisito para presentar) |
+| Mensaje de error visible para nombres de más de 30 caracteres | T26 | Hecho |
+| Rediseño visual | T23 | Hecho |
 
 ### 2.1 T24: interruptor de Consultar
 
@@ -55,11 +55,7 @@ Si en la sustentación pide «borrar todo y dejar solo mis datos», se corre `ba
 
 ### 2.3 T26: nombres demasiado largos
 
-Hoy los campos de nombres y apellidos tienen `maxLength`, así que el navegador corta lo que se escribe o se pega en el carácter 30, y no aparece ningún error. El profesor podría pegar un nombre de 35 caracteres, ver que se guarda cortado y concluir que no hay validación.
-
-Lo correcto es quitar ese corte (o subirlo a un límite holgado) para que aparezca el mensaje «El segundo nombre no puede tener más de 30 caracteres», que ya existe en `frontend/src/persona/validaciones.ts`. El backend ya lo rechaza (`libs/common`, con pruebas).
-
-Pasa lo mismo con el celular y el documento: si se pega un celular de 11 dígitos, se corta a 10 y queda **válido**. Hay que revisar también el correo. Claudia está haciendo el rediseño (T23) sobre el mismo formulario, así que conviene coordinar con ella o hacerlo después de que fusione.
+Antes, los campos tenían `maxLength` y el navegador cortaba lo escrito en el carácter 30 sin avisar; un celular de 11 dígitos se cortaba a 10 y quedaba válido. Ya no se corta nada: al salir del campo, o al pulsar Guardar, aparece el mensaje, por ejemplo «El segundo nombre no puede tener más de 30 caracteres». Si alguien se salta el formulario, el backend también lo rechaza.
 
 ## 3. Antes de presentar
 
