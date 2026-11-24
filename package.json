@@ -11,7 +11,8 @@
     "build:common": "npm run build -w @gdp/common",
     "test:common": "npm test -w @gdp/common",
     "test:services": "npm test -w ms-crear -w ms-modificar -w ms-consultar -w ms-borrar -w ms-log -w ms-control",
-    "test": "npm run test:common && npm run test:services"
+    "test": "npm run test:common && npm run test:services && npm run test:database",
+    "test:database": "node --test database/datos-profesor-csv.test.mjs"
   },
   "engines": {
     "node": ">=22"
