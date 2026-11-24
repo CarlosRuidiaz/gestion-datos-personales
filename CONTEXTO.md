@@ -184,8 +184,8 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**, **Descartada**.
 | T21 | Opcional: despliegue en Azure for Students | | T20 | Descartada | | |
 | T22 | Propuesta de rediseño visual del frontend: paleta, tipografía, bocetos y guía de herramientas | docs/rediseno/ | T13 | Hecha | Carlos Ruidiaz | feat/T22-propuesta-rediseno |
 | T23 | Aplicar el rediseño visual al frontend según `docs/rediseno/` | frontend/ | T22 | En curso | Claudia Elias | feat/T23-rediseno-visual |
-| T24 | Interruptor en la aplicación para apagar y encender Consultar (detiene y arranca el contenedor ms-consultar). Ver `docs/sustentacion.md` | services/ms-control/, frontend/, docker-compose.yml | T08, T11 | Pendiente | | |
-| T25 | Script para dejar la base solo con los datos del profesor (vaciar personas, log e índice, cargar sus datos y reindexar). Espera los datos del correo | database/ | T17 | Pendiente | | |
+| T24 | Interruptor en la aplicación para apagar y encender Consultar (detiene y arranca el contenedor ms-consultar). Ver `docs/sustentacion.md` | services/ms-control/, frontend/, docker-compose.yml | T08, T11 | En curso | Carlos Ruidiaz | feat/T24-interruptor-consultar |
+| T25 | Script para dejar la base solo con los datos del profesor (vaciar personas, log e índice, cargar sus datos y reindexar). Espera los datos del correo | database/ | T17 | En curso | Carlos Ruidiaz | feat/T24-interruptor-consultar |
 | T26 | Que el formulario muestre el error de nombres y apellidos demasiado largos en vez de cortar lo escrito | frontend/ | T12 | Pendiente | | |
 | T27 | Guion y lista de preparación de la sustentación | docs/ | | Hecha | Carlos Ruidiaz | feat/T27-guion-sustentacion |
 
