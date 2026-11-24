@@ -196,6 +196,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**, **Descartada**.
 | T25 | Script para dejar la base solo con los datos del profesor (vaciar personas, log e índice, cargar sus datos y reindexar). Espera los datos del correo | database/ | T17 | Hecha | Carlos Ruidiaz | feat/T24-interruptor-consultar |
 | T26 | Que el formulario muestre el error de nombres y apellidos demasiado largos en vez de cortar lo escrito | frontend/ | T12 | Hecha | Carlos Ruidiaz | feat/T26-errores-de-longitud |
 | T27 | Guion y lista de preparación de la sustentación | docs/ | | Hecha | Carlos Ruidiaz | feat/T27-guion-sustentacion |
+| T28 | Cargar los datos del profesor también desde CSV (Excel guardado como CSV): reconocer columnas y valores comunes, validar y dejar fuera las filas inválidas con su motivo | database/ | T25 | En curso | Carlos Ruidiaz | feat/T28-datos-profesor-csv |
 
 Después de T05, el trabajo se puede repartir en cuatro frentes paralelos con poco cruce: microservicios (T06 a T10), frontend (T11 a T13), n8n (T14 a T16) y calidad (T17 a T19).
 
