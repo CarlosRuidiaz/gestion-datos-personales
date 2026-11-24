@@ -3,7 +3,7 @@
 > Este es el documento de contexto del repositorio. Cualquier integrante del equipo, o la IA que use, debe leerlo completo antes de trabajar.
 > Uso: haz `git pull`, abre tu IA en la carpeta del repositorio y pídele «Lee CONTEXTO.md y dime en qué estado está el proyecto y qué me toca hacer».
 
-**Última actualización:** 2026-11-23, por Carlos Ruidiaz (T21 descartada)
+**Última actualización:** 2026-11-23, por Carlos Ruidiaz (tarea T27)
 **Fase actual:** Fase 2 · Frentes paralelos (microservicios, frontend, n8n y calidad)
 
 ---
@@ -126,7 +126,9 @@ Configuración inicial de n8n (una sola vez): `bash n8n/configurar.sh` carga las
 - T15: flujo `Consulta en lenguaje natural` (`n8n/workflows/chat-consulta.json`, id `gdpChatConsulta1`, publicado): Chat Trigger protegido con la cuenta de n8n y con webhook fijo, AI Agent con Gemini `gemini-3.5-flash-lite`, memoria de sesión de 10 interacciones y dos herramientas: `consultar_personas` (SQL sobre `vista_personas`, con una barrera que solo deja pasar un `SELECT` y lo ejecuta como subconsulta, ver sección 7) y `buscar_personas_similares` (PGVector con `gemini-embedding-001`). Cada consulta queda en ms-log como `CONSULTA_NL`, con éxito o con error. `configurar.sh` crea la credencial `gdpCredMsLogKey1` con `N8N_LOG_API_KEY`, publica el chat y comprueba que quedó activo, y `.env.example` trae el valor de `N8N_CHAT_URL`. `n8n/verificar-chat.sh` lo comprueba (CP-09 y CP-10, que la colección de Postman no cubre): barrera SQL, las preguntas de la sección 7.1 del diseño, memoria, que el chat no pueda borrar y el registro en el log. Probado el 2026-11-23 con Gemini y PostgreSQL reales: todas las comprobaciones sin fallos, cada respuesta en menos de 11 s. Cómo está armado y cómo probarlo a mano: `n8n/README.md`.
 
 - T22: propuesta de rediseño visual del frontend en `docs/rediseno/`: `README.md` con el diagnóstico de lo que hoy se ve genérico, el sistema visual (paleta en verde petróleo con contraste WCAG AA medido, tipografía Public Sans servida con `@fontsource-variable/public-sans`, escala de espaciado, radios y botones), cómo debe quedar cada pantalla respetando el menú principal y la distribución del prototipo del enunciado, las herramientas, los pasos de la T23 y una lista para comprobar el resultado. `boceto.html` (se abre con doble clic) muestra la paleta, la tipografía y cuatro pantallas con datos ficticios; revisado en el navegador a 1280 px y a 375 px, sin desplazamiento horizontal. La skill `frontend-design` de Anthropic (Apache 2.0) quedó en `.claude/skills/frontend-design/`: Claude Code la carga sola y las demás IA deben leer su `SKILL.md`. No cambia código de la aplicación: eso es la T23, libre para cualquiera.
-**Todavía no existe:** nada del núcleo del sistema. Solo queda el rediseño visual (T23); T21 se descartó. La base de datos arranca vacía: los datos de prueba se cargan con `bash database/cargar-datos-prueba.sh` (T17), y después hay que ejecutar «Reindexar todo» en n8n.
+- T27: `docs/sustentacion.md` con cómo es la sustentación (según un grupo que ya presentó), lo que falta preparar (T24 a T26), la lista para el día anterior, el guion de la demostración y las preguntas probables.
+
+**Todavía no existe:** nada del núcleo del sistema. Para la sustentación faltan T24 (interruptor de Consultar), T25 (datos del profesor) y T26 (errores de nombres largos), descritas en `docs/sustentacion.md`; el rediseño (T23) está en curso. T21 se descartó. La base de datos arranca vacía: los datos de prueba se cargan con `bash database/cargar-datos-prueba.sh` (T17), y después hay que ejecutar «Reindexar todo» en n8n.
 
 **En curso:** ver la columna Estado del tablero.
 
@@ -185,7 +187,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**, **Descartada**.
 | T24 | Interruptor en la aplicación para apagar y encender Consultar (detiene y arranca el contenedor ms-consultar). Ver `docs/sustentacion.md` | services/ms-control/, frontend/, docker-compose.yml | T08, T11 | Pendiente | | |
 | T25 | Script para dejar la base solo con los datos del profesor (vaciar personas, log e índice, cargar sus datos y reindexar). Espera los datos del correo | database/ | T17 | Pendiente | | |
 | T26 | Que el formulario muestre el error de nombres y apellidos demasiado largos en vez de cortar lo escrito | frontend/ | T12 | Pendiente | | |
-| T27 | Guion y lista de preparación de la sustentación | docs/ | | En curso | Carlos Ruidiaz | feat/T27-guion-sustentacion |
+| T27 | Guion y lista de preparación de la sustentación | docs/ | | Hecha | Carlos Ruidiaz | feat/T27-guion-sustentacion |
 
 Después de T05, el trabajo se puede repartir en cuatro frentes paralelos con poco cruce: microservicios (T06 a T10), frontend (T11 a T13), n8n (T14 a T16) y calidad (T17 a T19).
 
@@ -208,6 +210,7 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 
 | Fecha | Decisión | Motivo | Quién |
 | --- | --- | --- | --- |
+| 2026-11-23 | Consultar se podrá apagar y encender también desde la aplicación (T24): un microservicio `ms-control`, solo para el administrador, detiene y arranca los contenedores de `ms-consultar` a través de un proxy del socket de Docker. El comando de DD-04 sigue funcionando | El profesor pide en la sustentación un botón en la interfaz, y que el contenedor quede detenido de verdad. El proxy limita lo que `ms-control` puede pedirle a Docker y evita montar el socket en un servicio expuesto | Carlos Ruidiaz |
 | 2026-11-23 | Se descarta T21 (despliegue opcional en Azure for Students). El sistema se entrega para ejecutarse en local con Docker Compose | Era opcional en el plan y el equipo decidió no hacerla | Carlos Ruidiaz |
 | 2026-11-24 | El rediseño visual (T23) se hace con CSS propio en `estilos.css`, sin Tailwind ni bibliotecas de componentes, con una sola tipografía (Public Sans) servida desde la propia aplicación, y conserva el menú principal y la distribución del formulario del enunciado. Se descartó scroll-craft | El cambio es solo de estilo y no justifica reescribir el marcado. Las fuentes locales evitan depender de internet y de terceros. scroll-craft está hecha para páginas de presentación con animaciones al desplazarse, no para una herramienta de formularios y tablas | Carlos Ruidiaz |
 | 2026-11-23 | Las pruebas unitarias de los servicios usan una base de datos falsa (`services/pruebas-comunes.ts`) y cargan `@gdp/common` desde `libs/common/src` con `moduleNameMapper` y `paths` (`services/tsconfig.test.json`), así `npm test` no necesita compilar la librería ni contenedores. Los `tsconfig.json` de los servicios excluyen `src/**/*.spec.ts`. No se agregaron dependencias: Jest, ts-jest y los tipos ya los instala `libs/common` (el `package-lock.json` no cambia) | Que cualquiera pueda correr las pruebas con `npm install && npm test`, y que la compilación de Docker (`tsc` con `types: ["node"]`) no falle por los archivos de prueba. Las pruebas de integración con la base de datos real siguen en `libs/common`, que ya las tenía desde T05 | Juan Fernández |
