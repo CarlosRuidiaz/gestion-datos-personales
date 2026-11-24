@@ -74,4 +74,25 @@ export class PersonasService {
     // Ya confirmado el borrado: n8n quita el vector de la persona. No se espera la respuesta.
     void this.indexacion.avisar(documento, TipoTransaccion.BORRAR);
   }
+
+  /**
+   * Borra todas las personas (T30), una por una con borrar(): cada una con su BORRAR en el log, con
+   * los datos que tenía, y su aviso a n8n. El log no se toca. Devuelve cuántas se borraron.
+   */
+  async borrarTodas(usuario: UsuarioAutenticado): Promise<{ borradas: number }> {
+    const personas = await this.dataSource
+      .getRepository(Persona)
+      .find({ select: { numeroDocumento: true }, order: { numeroDocumento: 'ASC' } });
+    let borradas = 0;
+    for (const { numeroDocumento } of personas) {
+      try {
+        await this.borrar(numeroDocumento, usuario);
+        borradas++;
+      } catch (error) {
+        // Otro usuario la borró al mismo tiempo: ya no está, que es lo que se pedía.
+        if (!(error instanceof NotFoundException)) throw error;
+      }
+    }
+    return { borradas };
+  }
 }

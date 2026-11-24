@@ -7,6 +7,7 @@ import { BorrarPersona } from './paginas/BorrarPersona';
 import { Consultar } from './paginas/Consultar';
 import { ConsultarLog } from './paginas/ConsultarLog';
 import { CrearPersona } from './paginas/CrearPersona';
+import { ImportarPersonas } from './paginas/ImportarPersonas';
 import { Menu } from './paginas/Menu';
 import { ModificarPersona } from './paginas/ModificarPersona';
 
@@ -26,6 +27,14 @@ export function App({ usuario }: { usuario: Usuario }) {
               element={
                 <RutaConRol ruta="/crear">
                   <CrearPersona />
+                </RutaConRol>
+              }
+            />
+            <Route
+              path="crear/importar"
+              element={
+                <RutaConRol ruta="/crear">
+                  <ImportarPersonas />
                 </RutaConRol>
               }
             />

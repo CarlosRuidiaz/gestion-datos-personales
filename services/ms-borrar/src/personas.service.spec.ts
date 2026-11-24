@@ -10,7 +10,7 @@ import {
   TipoTransaccion,
 } from '@gdp/common';
 import { ADMIN, crearEntorno, personaEjemplo } from '../../pruebas-comunes';
-import { PersonasController } from './personas.controller';
+import { CONFIRMACION_BORRAR_TODAS, PersonasController } from './personas.controller';
 import { PersonasService } from './personas.service';
 
 const DOC = '1043123456';
@@ -125,6 +125,55 @@ describe('ms-borrar · PersonasService.borrar', () => {
 
     expect(eventos).toEqual(['rollback']);
     expect(indexacion.avisar).not.toHaveBeenCalled();
+  });
+});
+
+describe('ms-borrar · PersonasService.borrarTodas (T30)', () => {
+  it('borra una por una, cada una con su BORRAR en el log y su aviso a n8n, sin tocar el resto del log', async () => {
+    const { servicio, dataSource, manager, auditoria, indexacion, eventos } = preparar();
+    dataSource.getRepository.mockReturnValue({
+      find: jest.fn().mockResolvedValue([{ numeroDocumento: '111' }, { numeroDocumento: '222' }]),
+    });
+    manager.findOneBy.mockImplementation(async (_e: unknown, { numeroDocumento }: { numeroDocumento: string }) =>
+      personaEjemplo({ numeroDocumento }),
+    );
+
+    await expect(servicio.borrarTodas(ADMIN)).resolves.toEqual({ borradas: 2 });
+
+    expect(manager.delete.mock.calls.map((c) => c[1])).toEqual([{ numeroDocumento: '111' }, { numeroDocumento: '222' }]);
+    expect(auditoria.registrar.mock.calls.map((c) => (c[1] as { tipo: string }).tipo)).toEqual(['BORRAR', 'BORRAR']);
+    expect(indexacion.avisar.mock.calls).toEqual([['111', 'BORRAR'], ['222', 'BORRAR']]);
+    expect(eventos).toEqual(['log', 'commit', 'aviso', 'log', 'commit', 'aviso']);
+    expect(manager.query).not.toHaveBeenCalled(); // nada de TRUNCATE ni DELETE sobre el log
+  });
+
+  it('si otra persona ya fue borrada al mismo tiempo, sigue con las demás', async () => {
+    const { servicio, dataSource, manager } = preparar();
+    dataSource.getRepository.mockReturnValue({
+      find: jest.fn().mockResolvedValue([{ numeroDocumento: '111' }, { numeroDocumento: '222' }]),
+    });
+    manager.findOneBy.mockResolvedValueOnce(null).mockResolvedValueOnce(personaEjemplo({ numeroDocumento: '222' }));
+
+    await expect(servicio.borrarTodas(ADMIN)).resolves.toEqual({ borradas: 1 });
+  });
+});
+
+describe('ms-borrar · borrar todas: confirmación (T30)', () => {
+  it('sin escribir la confirmación exacta responde 400 y no borra nada', () => {
+    const personas = { borrarTodas: jest.fn() };
+    const controlador = new PersonasController(personas as never);
+    expect(() => controlador.borrarTodas(undefined, ADMIN)).toThrow('Falta confirmar');
+    expect(() => controlador.borrarTodas('borrar todas', ADMIN)).toThrow('Falta confirmar');
+    expect(personas.borrarTodas).not.toHaveBeenCalled();
+    controlador.borrarTodas(CONFIRMACION_BORRAR_TODAS, ADMIN);
+    expect(personas.borrarTodas).toHaveBeenCalledWith(ADMIN);
+  });
+
+  it('se audita como BORRAR con su contexto', () => {
+    expect(Reflect.getMetadata(CLAVE_AUDITAR, PersonasController.prototype.borrarTodas)).toEqual({
+      tipo: TipoTransaccion.BORRAR,
+      contexto: 'Borrar todas las personas',
+    });
   });
 });
 

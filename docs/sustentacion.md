@@ -23,7 +23,7 @@ Lo que sigue lo contó un compañero de otro grupo que ya presentó (2026-11-23)
 | Pendiente | Tarea | Estado |
 | --- | --- | --- |
 | Interruptor de Consultar en la aplicación | T24 | Hecho |
-| Script para dejar la base solo con los datos del profesor | T25, T28 y T29 | Hecho y probado con el formato que recibió otro grupo (Excel y zip de fotos). Falta nuestro correo |
+| Cargar y borrar los datos del profesor desde la aplicación | T30 | Hecho y probado con el formato que recibió otro grupo (Excel y zip de fotos). Falta nuestro correo |
 | Mensaje de error visible para nombres de más de 30 caracteres | T26 | Hecho |
 | Rediseño visual | T23 | Hecho |
 
@@ -42,19 +42,23 @@ Cómo está hecho, en `services/ms-control/README.md`. En resumen, para explicar
 
 Para ensayarlo: `bash services/ms-control/verificar.sh`.
 
-### 2.2 T25, T28 y T29: datos del profesor
+### 2.2 T30: datos del profesor, desde la aplicación
 
-Por lo que recibió otro grupo, el profesor manda un Excel (`grupo_N.xlsx`) con una fila por persona y las mismas columnas del formulario, más una columna «Foto», y un zip con las fotos (`archivos_jpg.zip`). El script ya está probado con ese formato: reconoce las 10 columnas y las fotos, y carga cada persona con la suya.
+Por lo que recibió otro grupo, el profesor manda un Excel (`grupo_N.xlsx`) con una fila por persona y las mismas columnas del formulario, más una columna «Foto», y un zip con las fotos (`archivos_jpg.zip`). Todo se hace desde la aplicación, con el administrador, para que el profesor vea que cada operación pasa por los microservicios y queda en el log:
+
+- **Cargar:** «Crear personas» → «Importar personas desde un archivo». Se eligen el Excel y el zip **tal como llegaron**, se pulsa «Revisar archivo» y la pantalla muestra, sin guardar nada, cada fila: lista para crear, ya registrada o con errores (con el mismo mensaje del formulario), y qué foto le toca. Con «Crear N personas» se crean, cada una con su `CREAR` en el log.
+- **Borrar todo:** «Borrar personas» → «Borrar todas las personas…», escribir `BORRAR TODAS` y confirmar. Cada persona queda en el log como `BORRAR` con los datos que tenía. **El log no se borra**, como pide el diseño.
+- **La persona inválida a propósito** (por ejemplo, el segundo nombre de más de 30 caracteres) aparece en la revisión como «No se crea» con su motivo, y al importar queda en el log como `CREAR` con error. También se puede crear a mano en el formulario para mostrar el mensaje junto al campo.
 
 Cuando llegue el correo:
 
-1. Crea `database/datos-profesor/` y pon ahí el Excel y el zip **tal como llegaron**. No se suben al repositorio.
-2. Ese mismo día, corre `bash database/cargar-datos-profesor.sh --revisar`. Muestra qué columnas y fotos reconoció y qué filas quedan fuera y por qué, sin tocar la base.
-3. La persona inválida a propósito (por ejemplo, el segundo nombre de más de 30 caracteres) queda fuera sola. Se prueba en el formulario para mostrar el mensaje de error.
-4. Carga con `bash database/cargar-datos-profesor.sh`. Borra personas, log e índice, carga los datos con sus fotos y reindexa el chat.
-5. Ensaya con las preguntas que se crea que hará el profesor y anota aquí las respuestas esperadas.
+1. Ese mismo día, en la aplicación, importa el Excel y el zip y revisa la tabla: columnas reconocidas, fotos y filas que no se crean.
+2. Ensaya con las preguntas que se crea que hará el profesor y anota aquí las respuestas esperadas.
+3. Antes de presentar, deja la base solo con sus datos: «Borrar todas» y luego «Importar». Si el profesor pide en vivo «borra todo y deja solo mis datos», se hace igual, frente a él.
 
-Detalles en `database/README.md`. Si en la sustentación pide «borrar todo y dejar solo mis datos», se corre `bash database/cargar-datos-profesor.sh --si`.
+Después de importar o borrar, el chat se actualiza solo (cada persona avisa a n8n). Si se cargaron muchas de golpe y una respuesta no cuadra, «Reindexar todo» en n8n lo corrige.
+
+Para ensayarlo sin los datos reales: `bash services/ms-crear/verificar-importacion.sh` usa un Excel y un zip ficticios del mismo formato.
 
 ### 2.3 T26: nombres demasiado largos
 
@@ -66,7 +70,7 @@ El día anterior:
 
 - [ ] `git pull` en el equipo con el que se va a presentar.
 - [ ] `docker compose --profile consultar up -d --build`, con todos los contenedores `healthy`.
-- [ ] Cargar los datos del profesor con `bash database/cargar-datos-profesor.sh` (T25). Debe terminar en «Listo».
+- [ ] Dejar la base solo con los datos del profesor desde la aplicación: «Borrar todas» y luego «Importar personas desde un archivo» (T30).
 - [ ] Probar el interruptor de Consultar: apagar y encender una vez.
 - [ ] Revisar que `GEMINI_API_KEY` esté en `.env` y que el chat responda. Llevar datos móviles por si falla el internet (riesgo de la sección 12 del diseño).
 - [ ] Tener abiertas las pestañas:
@@ -97,7 +101,7 @@ Cada paso termina en el log cuando hay un cambio.
 | 6 | Consultar la ficha | ms-consultar es un contenedor independiente |
 | 7 | Apagar Consultar con el interruptor del menú (T24) | La opción queda como no disponible y Crear, Modificar, Borrar y Log siguen funcionando. Mostrar en Docker el contenedor detenido y volver a encenderlo |
 | 8 | Borrar con confirmación y ver el log | El detalle del log conserva los datos que tenía la persona |
-| 9 | Dejar la base solo con sus datos (T25) | `bash database/cargar-datos-profesor.sh --si`: vacía, carga y reindexa el chat |
+| 9 | Dejar la base solo con sus datos (T30) | «Borrar todas» en Borrar y «Importar» en Crear: cada persona pasa por ms-borrar o ms-crear y queda en el log, que nunca se vacía |
 | 10 | Chat en lenguaje natural | Agente de n8n con dos herramientas: SQL de solo lectura sobre `vista_personas` y búsqueda vectorial con pgvector (RAG). Gemini como modelo. Cada consulta queda en el log |
 | 11 | Entrar como consultor | Solo ve Consultar, Consultar en lenguaje natural y Log (sección 2.2 del diseño) |
 
