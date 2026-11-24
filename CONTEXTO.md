@@ -3,8 +3,8 @@
 > Este es el documento de contexto del repositorio. Cualquier integrante del equipo, o la IA que use, debe leerlo completo antes de trabajar.
 > Uso: haz `git pull`, abre tu IA en la carpeta del repositorio y pídele «Lee CONTEXTO.md y dime en qué estado está el proyecto y qué me toca hacer».
 
-**Última actualización:** 2026-11-23, por Claudia Elias (T23 hecha)
-**Fase actual:** Fase 4 · Rediseño visual hecho (T23). Quedan las tareas de la sustentación (T24 a T26)
+**Última actualización:** 2026-11-23, por Carlos Ruidiaz (tareas T24 y T25)
+**Fase actual:** Fase 4 · Rediseño visual hecho (T23). Interruptor de Consultar y datos del profesor hechos (T24 y T25). Queda T26 para la sustentación
 
 ---
 
@@ -32,6 +32,8 @@ Documentos de referencia dentro del repositorio:
 | ms-consultar | NestJS (perfil `consultar`) | /api/consultar | Consultar personas. Se habilita y deshabilita |
 | ms-borrar | NestJS | /api/borrar | Buscar y borrar personas |
 | ms-log | NestJS | /api/log | Consultar el log y recibir los registros de n8n |
+| ms-control | NestJS | /api/control | Apagar y encender ms-consultar desde la aplicación (solo administrador, T24). No usa la base de datos |
+| docker-proxy | tecnativa/docker-socket-proxy | solo red interna `control` | Único con acceso al socket de Docker: solo deja listar, detener y arrancar contenedores |
 | postgres | PostgreSQL 16 + pgvector | solo red interna | Personas, log, vectores |
 | n8n | n8n | puerto 5678 | Chat RAG, indexación de embeddings |
 
@@ -54,7 +56,7 @@ cp .env.example .env        # completar llaves y contraseñas (hoy son obligator
 docker compose --profile consultar up -d --build
 ```
 
-Qué arranca hoy: `gateway` (Traefik), `postgres` (PostgreSQL 16 con pgvector), `keycloak`, `frontend` (la aplicación en <http://localhost>), `ms-crear`, `ms-modificar`, `ms-borrar`, `ms-log`, `n8n` (en <http://localhost:5678>) y, solo con `--profile consultar`, `ms-consultar`. Para apagar, encender o escalar Consultar: `docker compose stop ms-consultar`, `docker compose up -d ms-consultar` y `docker compose up -d --scale ms-consultar=3 ms-consultar`. Ya no queda ningún servicio comentado en `docker-compose.yml`.
+Qué arranca hoy: `gateway` (Traefik), `postgres` (PostgreSQL 16 con pgvector), `keycloak`, `frontend` (la aplicación en <http://localhost>), `ms-crear`, `ms-modificar`, `ms-borrar`, `ms-log`, `ms-control` y `docker-proxy` (el interruptor de Consultar, T24), `n8n` (en <http://localhost:5678>) y, solo con `--profile consultar`, `ms-consultar`. Consultar se apaga y enciende con el interruptor del menú principal (administrador) o con comandos: `docker compose stop ms-consultar`, `docker compose up -d ms-consultar` y `docker compose up -d --scale ms-consultar=3 ms-consultar`. Ya no queda ningún servicio comentado en `docker-compose.yml`.
 
 Cómo comprobar que funciona:
 
@@ -63,13 +65,14 @@ docker compose ps                      # gateway, postgres, keycloak y n8n en es
 curl -i http://localhost/              # 200: el gateway responde y entrega la aplicación (en el navegador redirige al login de Keycloak)
 docker compose exec -T postgres sh < database/verificar.sh   # esquema, restricciones y permisos: termina con TODO BIEN
 bash keycloak/verificar.sh             # realm, roles, usuarios de prueba y login con PKCE: termina con TODO BIEN (en Windows, con Git Bash)
-npm install && npm test                # pruebas unitarias de libs/common y de los cinco servicios (150 en total, sin contenedores); por separado: npm run test:common y npm run test:services
+npm install && npm test                # pruebas unitarias de libs/common y de los cinco servicios (158 en total, sin contenedores); por separado: npm run test:common y npm run test:services
 bash libs/common/pruebas-integracion.sh   # guard, validaciones y log transaccional contra PostgreSQL y Keycloak reales
 bash services/ms-crear/verificar.sh     # ms-crear de extremo a extremo, por el gateway y con tokens reales
 bash services/ms-modificar/verificar.sh # ms-modificar de extremo a extremo (no necesita ms-crear ni ms-consultar)
 bash services/ms-borrar/verificar.sh    # ms-borrar de extremo a extremo (no necesita ms-crear ni ms-consultar)
 bash services/ms-consultar/verificar.sh # ms-consultar de extremo a extremo, incluido apagarlo, encenderlo y escalarlo
 bash services/ms-log/verificar.sh       # ms-log de extremo a extremo: filtros, paginación y registro de n8n con su llave
+bash services/ms-control/verificar.sh   # interruptor de Consultar (T24): permisos, apagar y encender por la API, contenedor detenido de verdad y lo que docker-proxy rechaza
 bash services/verificar-indexacion.sh   # avisos a n8n de crear, modificar y borrar (con un espía; y el camino real si hay GEMINI_API_KEY)
 bash frontend/verificar.sh              # frontend: Nginx, config.js, convivencia con /api y login con PKCE como lo hace keycloak-js
 npx newman run tests/postman/gdp.postman_collection.json -e tests/postman/gdp-local.postman_environment.json --env-var "passwordAdmin=..." ...   # colección de Postman (T19): todos los endpoints y permisos; el comando completo con las contraseñas de .env está en tests/postman/README.md
@@ -78,6 +81,7 @@ bash n8n/configurar.sh                  # una vez, y cada vez que cambien los fl
 bash n8n/verificar.sh                   # indexación por webhook, reindexación completa y permisos de usr_n8n, con Gemini real
 bash n8n/verificar-chat.sh              # chat (T15): barrera SQL, CP-09, CP-10, memoria y registro en ms-log; pide tu cuenta de n8n
 bash database/cargar-datos-prueba.sh    # 20 personas ficticias con su registro CREAR en el log; se puede repetir. Después, «Reindexar todo» en n8n
+bash database/cargar-datos-profesor.sh  # T25: BORRA personas, log e índice y deja solo database/datos-profesor.sql (se crea desde la plantilla; no se sube); reindexa el chat
 ```
 
 Si ya habías arrancado el proyecto antes de T03, tu base de datos local no tiene las tablas: completa las `DB_PASSWORD_*` en tu `.env` y recrea el volumen con `docker compose down -v` antes de volver a arrancar.
@@ -128,8 +132,10 @@ Configuración inicial de n8n (una sola vez): `bash n8n/configurar.sh` carga las
 - T22: propuesta de rediseño visual del frontend en `docs/rediseno/`: `README.md` con el diagnóstico de lo que hoy se ve genérico, el sistema visual (paleta en verde petróleo con contraste WCAG AA medido, tipografía Public Sans servida con `@fontsource-variable/public-sans`, escala de espaciado, radios y botones), cómo debe quedar cada pantalla respetando el menú principal y la distribución del prototipo del enunciado, las herramientas, los pasos de la T23 y una lista para comprobar el resultado. `boceto.html` (se abre con doble clic) muestra la paleta, la tipografía y cuatro pantallas con datos ficticios; revisado en el navegador a 1280 px y a 375 px, sin desplazamiento horizontal. La skill `frontend-design` de Anthropic (Apache 2.0) quedó en `.claude/skills/frontend-design/`: Claude Code la carga sola y las demás IA deben leer su `SKILL.md`. No cambia código de la aplicación: eso es la T23, libre para cualquiera.
 - T23: rediseño visual del frontend aplicado según `docs/rediseno/`. Tipografía Public Sans servida desde la propia imagen (`@fontsource-variable/public-sans` 5.3.0, sin cargar nada de internet) y `estilos.css` reescrito con la paleta en verde petróleo, la escala de espaciado y los radios de la propuesta; la única sombra es la de la confirmación del borrado y el foco se ve en todo. `Marco.tsx` es ahora una barra lateral con las opciones del rol, tomadas de `opcionesDelMenu()` como el menú principal, con la pantalla actual marcada (`NavLink`), Consultar «No disponible» si su servicio está apagado, y el usuario, su rol y «Cerrar sesión» abajo; por debajo de 48 rem pasa arriba con un botón «Menú». El menú principal es un índice en filas en lugar de tarjetas. La ficha de Consultar y Borrar muestra primero el tipo y el número de documento y el nombre completo, luego la fecha de nacimiento y el género, la foto en formato carné a la derecha y, debajo de la línea, el contacto con el celular agrupado (301 111 2233). En la confirmación del borrado «Cancelar» va primero y conserva el foco. En el formulario, documento, fecha y celular tienen ancho corto. En el log, el resultado lleva un punto de color y la cabecera de la tabla queda fija al desplazarse. No cambió la lógica, las rutas, las llamadas a la API ni los permisos. `npm test` pasa con 86 pruebas (se ajustó la de la ficha y hay tres nuevas de la barra lateral por rol), `frontend/verificar.sh` termina en TODO BIEN y se revisó en el navegador el 2026-11-23 con `admin.prueba`, a 1280 px y a 375 px (sin desplazamiento horizontal fuera de la tabla del log): menú, consultar, borrar con la confirmación cancelada, crear con errores, log, menú del móvil, foco con el teclado y ms-consultar apagado (CP-07).
 - T27: `docs/sustentacion.md` con cómo es la sustentación (según un grupo que ya presentó), lo que falta preparar (T24 a T26), la lista para el día anterior, el guion de la demostración y las preguntas probables.
+- T24: interruptor de Consultar en el menú principal (solo administrador). `ms-control` (`/api/control`) detiene y arranca los contenedores de ms-consultar a través de `docker-proxy`, que con la configuración de `services/ms-control/docker-proxy.cfg` solo deja listar, detener y arrancar. El frontend revisa el health al cambiarlo y muestra «Apagando…» o «Encendiendo…» hasta que se confirma. Probado: `services/ms-control/verificar.sh` (26 comprobaciones, TODO BIEN el 2026-11-23), 8 pruebas unitarias y 2 del frontend (88 en total, con el rediseño de T23). Probado en el navegador con `admin.prueba`, con el estilo del rediseño: apagar marca Consultar como «No disponible» en el menú y en la barra lateral y deja el contenedor `exited`; encender lo devuelve. Sin desplazamiento horizontal a 375 px.
+- T25: `database/cargar-datos-profesor.sh` deja la base solo con `database/datos-profesor.sql` (se crea desde `datos-profesor.plantilla.sql` y no se sube): en una transacción vacía personas, log e índice y carga las personas con su `CREAR`; luego reindexa el chat con el CLI de n8n. Probado con datos ficticios: carga, rechazo completo si una fila es inválida y aviso si falta el archivo. La reindexación no se probó en este equipo (n8n sin configurar ni `GEMINI_API_KEY`).
 
-**Todavía no existe:** nada del núcleo del sistema. Para la sustentación faltan T24 (interruptor de Consultar), T25 (datos del profesor) y T26 (errores de nombres largos), descritas en `docs/sustentacion.md`; el rediseño (T23) ya está hecho. T21 se descartó. La base de datos arranca vacía: los datos de prueba se cargan con `bash database/cargar-datos-prueba.sh` (T17), y después hay que ejecutar «Reindexar todo» en n8n.
+**Todavía no existe:** nada del núcleo del sistema. Para la sustentación falta T26 (errores de nombres largos) y poner en `database/datos-profesor.sql` los datos del correo del profesor cuando lleguen (ver `docs/sustentacion.md`); el rediseño (T23) ya está hecho. T21 se descartó. La base de datos arranca vacía: los datos de prueba se cargan con `bash database/cargar-datos-prueba.sh` (T17), y después hay que ejecutar «Reindexar todo» en n8n.
 
 **En curso:** ver la columna Estado del tablero.
 
@@ -185,8 +191,8 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**, **Descartada**.
 | T21 | Opcional: despliegue en Azure for Students | | T20 | Descartada | | |
 | T22 | Propuesta de rediseño visual del frontend: paleta, tipografía, bocetos y guía de herramientas | docs/rediseno/ | T13 | Hecha | Carlos Ruidiaz | feat/T22-propuesta-rediseno |
 | T23 | Aplicar el rediseño visual al frontend según `docs/rediseno/` | frontend/ | T22 | Hecha | Claudia Elias | feat/T23-rediseno-visual |
-| T24 | Interruptor en la aplicación para apagar y encender Consultar (detiene y arranca el contenedor ms-consultar). Ver `docs/sustentacion.md` | services/ms-control/, frontend/, docker-compose.yml | T08, T11 | En curso | Carlos Ruidiaz | feat/T24-interruptor-consultar |
-| T25 | Script para dejar la base solo con los datos del profesor (vaciar personas, log e índice, cargar sus datos y reindexar). Espera los datos del correo | database/ | T17 | En curso | Carlos Ruidiaz | feat/T24-interruptor-consultar |
+| T24 | Interruptor en la aplicación para apagar y encender Consultar (detiene y arranca el contenedor ms-consultar). Ver `docs/sustentacion.md` | services/ms-control/, frontend/, docker-compose.yml | T08, T11 | Hecha | Carlos Ruidiaz | feat/T24-interruptor-consultar |
+| T25 | Script para dejar la base solo con los datos del profesor (vaciar personas, log e índice, cargar sus datos y reindexar). Espera los datos del correo | database/ | T17 | Hecha | Carlos Ruidiaz | feat/T24-interruptor-consultar |
 | T26 | Que el formulario muestre el error de nombres y apellidos demasiado largos en vez de cortar lo escrito | frontend/ | T12 | Pendiente | | |
 | T27 | Guion y lista de preparación de la sustentación | docs/ | | Hecha | Carlos Ruidiaz | feat/T27-guion-sustentacion |
 
@@ -211,6 +217,9 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 
 | Fecha | Decisión | Motivo | Quién |
 | --- | --- | --- | --- |
+| 2026-11-23 | `docker-proxy` usa una configuración propia de HAProxy (`services/ms-control/docker-proxy.cfg`) que solo permite `GET /containers/json` y `POST /containers/{id}/stop` y `/start`, y no las variables de la imagen | Con las variables, detener y arrancar exige `POST=1`, y junto con `CONTAINERS=1` eso también permite crear contenedores y exec, es decir, controlar el equipo. `verificar.sh` comprueba que lo demás responde 403 | Carlos Ruidiaz |
+| 2026-11-23 | El apagado y encendido de Consultar no se registran en `log_transaccion`; quedan en la salida de `ms-control` con el usuario | El log es de transacciones sobre personas y su restricción `log_tipo_chk` solo admite cinco tipos. Agregar uno obligaría a recrear el volumen de todos | Carlos Ruidiaz |
+| 2026-11-23 | Los datos del profesor van en `database/datos-profesor.sql`, que está en `.gitignore`, y se cargan todos o ninguno | No sabemos si son ficticios, y la regla es no subir datos personales. Si una fila es inválida, la base no queda a medias en plena sustentación | Carlos Ruidiaz |
 | 2026-11-23 | Consultar se podrá apagar y encender también desde la aplicación (T24): un microservicio `ms-control`, solo para el administrador, detiene y arranca los contenedores de `ms-consultar` a través de un proxy del socket de Docker. El comando de DD-04 sigue funcionando | El profesor pide en la sustentación un botón en la interfaz, y que el contenedor quede detenido de verdad. El proxy limita lo que `ms-control` puede pedirle a Docker y evita montar el socket en un servicio expuesto | Carlos Ruidiaz |
 | 2026-11-23 | Se descarta T21 (despliegue opcional en Azure for Students). El sistema se entrega para ejecutarse en local con Docker Compose | Era opcional en el plan y el equipo decidió no hacerla | Carlos Ruidiaz |
 | 2026-11-23 | En la ficha de persona (Consultar y Borrar) ya no aparecen por separado primer nombre, segundo nombre y apellidos: se muestra el nombre completo como título, debajo del tipo y el número de documento. El celular se muestra agrupado de a 3, 3 y 4 cifras. Se ajustó la prueba de la ficha en `consultar-borrar.test.tsx` | Lo pide la propuesta de T22 (sección 5.3): la ficha se lee como un documento de identidad. En el formulario los campos del nombre siguen separados, porque ahí se escriben por separado. Lo guardado no cambia | Claudia Elias |

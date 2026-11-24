@@ -1,6 +1,6 @@
 # Gestión de Datos Personales: orquestación de contenedores (sección 10 del diseño).
 #
-# Estado: están los diez contenedores del diseño (desde la tarea T14). Cada bloque indica la
+# Estado: están los diez contenedores del diseño (desde la tarea T14), más docker-proxy y ms-control (T24). Cada bloque indica la
 # tarea del tablero de CONTEXTO.md que lo agregó.
 #
 # Arranque:  cp .env.example .env   (completar contraseñas)
@@ -15,6 +15,10 @@ networks:
   # Conecta PostgreSQL solo con los microservicios y n8n. El gateway y el frontend no entran aquí.
   datos:
     name: gdp_datos
+  # Solo ms-control y docker-proxy (T24). Interna: no sale a internet ni se publica.
+  control:
+    name: gdp_control
+    internal: true
 
 volumes:
   pgdata:
@@ -271,6 +275,49 @@ services:
       - traefik.http.routers.ms-consultar.rule=PathPrefix(`/api/consultar`)
       - traefik.http.routers.ms-consultar.entrypoints=web
       - traefik.http.services.ms-consultar.loadbalancer.server.port=3000
+
+  # --- T24: interruptor de Consultar en la aplicación -------------------------------
+  # docker-proxy es el único que toca el socket de Docker y solo deja listar contenedores,
+  # detenerlos y arrancarlos (ver services/ms-control/docker-proxy.cfg). Está en la red interna
+  # «control», sin puertos publicados, y solo ms-control llega a él.
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:v0.4.2
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./services/ms-control/docker-proxy.cfg:/usr/local/etc/haproxy/haproxy.cfg.template:ro
+    networks:
+      - control
+
+  # Apaga y enciende ms-consultar desde el menú (solo el administrador). No usa la base de datos.
+  ms-control:
+    build:
+      context: .
+      dockerfile: services/ms-control/Dockerfile
+    restart: unless-stopped
+    environment:
+      DOCKER_PROXY_URL: http://docker-proxy:2375
+      COMPOSE_PROJECT: gestion-datos-personales
+      KEYCLOAK_PUBLIC_URL: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}
+      KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-gestion-personas}
+      TZ: ${TZ:-America/Bogota}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/control/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      - docker-proxy
+    networks:
+      - frontal
+      - control
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ms-control.rule=PathPrefix(`/api/control`)
+      - traefik.http.routers.ms-control.entrypoints=web
+      - traefik.http.services.ms-control.loadbalancer.server.port=3000
 
   # --- T11: frontend (React servido con Nginx) ----------------------------------
   # Atiende todo lo que no es /api. config.js se genera al arrancar con estas variables.

@@ -1,0 +1,102 @@
+/* Interruptor de Consultar (T24). Usa los tokens del rediseño (estilos.css, docs/rediseno/). */
+.interruptor-consultar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e3) var(--e6);
+  margin-top: var(--e8);
+  padding: var(--e4) var(--e6);
+  background: var(--superficie);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-contenedor);
+}
+
+.interruptor-texto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e1);
+}
+
+.interruptor-titulo {
+  font-weight: 600;
+  color: var(--tinta);
+}
+
+.interruptor-ayuda {
+  color: var(--tinta-suave);
+  font-size: 0.875rem;
+}
+
+.interruptor {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e3);
+  padding: var(--e1) 0;
+  border: 0;
+  background: none;
+  color: var(--tinta);
+  font: inherit;
+  cursor: pointer;
+}
+
+.interruptor:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.interruptor:focus-visible {
+  outline: 2px solid var(--petroleo);
+  outline-offset: 3px;
+  border-radius: var(--radio-control);
+}
+
+.interruptor-pista {
+  position: relative;
+  width: 2.75rem;
+  height: 1.5rem;
+  border: 1px solid var(--borde-campo);
+  border-radius: 999px;
+  background: var(--papel);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.interruptor.encendido .interruptor-pista {
+  border-color: var(--petroleo);
+  background: var(--petroleo);
+}
+
+.interruptor-perilla {
+  position: absolute;
+  top: 0.125rem;
+  left: 0.125rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 50%;
+  background: var(--borde-campo);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.interruptor.encendido .interruptor-perilla {
+  background: var(--superficie);
+  transform: translateX(1.25rem);
+}
+
+.interruptor-estado {
+  min-width: 6.5rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.interruptor-error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--carmin);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interruptor-pista,
+  .interruptor-perilla {
+    transition: none;
+  }
+}

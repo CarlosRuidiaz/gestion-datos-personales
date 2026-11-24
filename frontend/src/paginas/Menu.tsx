@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
-import { nombreDelRol } from '../auth/roles';
 import { useSesion } from '../auth/ContextoSesion';
+import { nombreDelRol, Rol } from '../auth/roles';
+import { InterruptorConsultar } from '../componentes/InterruptorConsultar';
 import { configuracion } from '../config';
 import { opcionesDelMenu, type OpcionDelMenu } from '../menu/opciones';
 
@@ -12,7 +13,7 @@ const NOTA: Record<OpcionDelMenu['estado'], string> = {
 
 /** Menú principal: solo las opciones del rol (sección 8.2 del diseño), como un índice en filas. */
 export function Menu() {
-  const { usuario, consultarDisponible } = useSesion();
+  const { usuario, consultarDisponible, revisarConsultar } = useSesion();
   const opciones = opcionesDelMenu(usuario.roles, {
     // Mientras llega la primera respuesta del health no se marca como caído.
     consultarDisponible: consultarDisponible !== false,
@@ -41,6 +42,9 @@ export function Menu() {
           </li>
         ))}
       </ul>
+      {usuario.roles.includes(Rol.ADMINISTRADOR) && (
+        <InterruptorConsultar disponible={consultarDisponible} revisar={revisarConsultar} />
+      )}
     </section>
   );
 }
