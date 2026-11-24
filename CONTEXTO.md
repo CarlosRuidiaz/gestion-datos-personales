@@ -3,7 +3,7 @@
 > Este es el documento de contexto del repositorio. Cualquier integrante del equipo, o la IA que use, debe leerlo completo antes de trabajar.
 > Uso: haz `git pull`, abre tu IA en la carpeta del repositorio y pídele «Lee CONTEXTO.md y dime en qué estado está el proyecto y qué me toca hacer».
 
-**Última actualización:** 2026-11-23, por Claudia Elias (tarea T13)
+**Última actualización:** 2026-11-23, por Daniel Mendez (tarea T15)
 **Fase actual:** Fase 2 · Frentes paralelos (microservicios, frontend, n8n y calidad)
 
 ---
@@ -50,7 +50,7 @@ Reglas de diseño que no se deben romper sin registrar una decisión en la secci
 Requisitos: Docker Desktop (con WSL2 en Windows) y Git. Los puertos 80 y 8080 deben estar libres. Para programar los microservicios hace falta además Node.js 22 o superior (se usa Node 24 en los contenedores).
 
 ```bash
-cp .env.example .env        # completar llaves y contraseñas (hoy son obligatorias POSTGRES_PASSWORD, las seis DB_PASSWORD_*, las tres de Keycloak, N8N_LOG_API_KEY y N8N_ENCRYPTION_KEY; para indexar hace falta GEMINI_API_KEY)
+cp .env.example .env        # completar llaves y contraseñas (hoy son obligatorias POSTGRES_PASSWORD, las seis DB_PASSWORD_*, las tres de Keycloak, N8N_LOG_API_KEY y N8N_ENCRYPTION_KEY; para indexar y para el chat hace falta GEMINI_API_KEY, y N8N_CHAT_URL con el valor de .env.example)
 docker compose --profile consultar up -d --build
 ```
 
@@ -76,6 +76,7 @@ npx newman run tests/postman/gdp.postman_collection.json -e tests/postman/gdp-lo
 (cd frontend && npm install && npm test)   # menú por rol y pantallas (Vitest, sin contenedores)
 bash n8n/configurar.sh                  # una vez, y cada vez que cambien los flujos o una contraseña: credenciales, flujos y webhook activo
 bash n8n/verificar.sh                   # indexación por webhook, reindexación completa y permisos de usr_n8n, con Gemini real
+bash n8n/verificar-chat.sh              # chat (T15): barrera SQL, CP-09, CP-10, memoria y registro en ms-log; pide tu cuenta de n8n
 bash database/cargar-datos-prueba.sh    # 20 personas ficticias con su registro CREAR en el log; se puede repetir. Después, «Reindexar todo» en n8n
 ```
 
@@ -90,7 +91,7 @@ Notas:
 - Keycloak importa `keycloak/realm.json` solo si el realm no existe. Si cambia el archivo o una contraseña de los usuarios de prueba, hay que borrar el volumen `keycloak_data` (pasos en `keycloak/README.md`).
 - Para apagar todo: `docker compose --profile consultar down`.
 
-Configuración inicial de n8n (una sola vez): `bash n8n/configurar.sh` carga las credenciales de PostgreSQL y Gemini desde `.env`, importa los flujos de `n8n/workflows` y publica el de indexación. La cuenta de administrador se crea a mano en <http://localhost:5678>. Detalles, y cómo ejecutar la reindexación completa, en `n8n/README.md`. La guía completa en un equipo limpio es la tarea T20.
+Configuración inicial de n8n (una sola vez): `bash n8n/configurar.sh` carga las credenciales de PostgreSQL, Gemini y la llave de ms-log desde `.env`, importa los flujos de `n8n/workflows` y publica los de indexación y chat. La cuenta de administrador se crea a mano en <http://localhost:5678>. Detalles, y cómo ejecutar la reindexación completa, en `n8n/README.md`. La guía completa en un equipo limpio es la tarea T20.
 
 ## 4. Convenciones
 
@@ -121,8 +122,9 @@ Configuración inicial de n8n (una sola vez): `bash n8n/configurar.sh` carga las
 - T16: ms-crear, ms-modificar y ms-borrar avisan a n8n (`POST N8N_WEBHOOK_INDEXACION_URL` con `{ numeroDocumento, operacion }`) después de confirmar la transacción y sin esperar la respuesta, con `AvisoIndexacionService` de `libs/common`. Nunca falla la operación: si n8n está apagado, tarda más de 5 s o responde con error, el servicio responde igual y deja una advertencia en su log. Solo se avisa cuando la operación salió bien, y ms-modificar solo si cambió algún dato (no por la foto). `services/verificar-indexacion.sh` lo comprueba con un espía en lugar de n8n y, si n8n y Gemini están configurados, también el camino real (35 comprobaciones sin fallos el 2026-11-23; la parte real con Gemini queda pendiente de una `GEMINI_API_KEY`). 5 pruebas unitarias nuevas en `libs/common` (56 en total). **Para T18:** los servicios de crear, modificar y borrar reciben ahora `AvisoIndexacionService` en el constructor; en las pruebas unitarias se simula con `{ avisar: jest.fn() }`.
 - T19: colección de Postman en `tests/postman` (`gdp.postman_collection.json` y `gdp-local.postman_environment.json`): 54 peticiones y 80 comprobaciones sobre los cinco microservicios, por el gateway y con tokens reales de Keycloak (cliente `pruebas`, usuarios `admin.prueba` y `consultor.prueba`, que un script de la colección renueva antes de los 5 minutos). Cubre CP-01 a CP-06 y CP-08, y el historial completo del log después de borrar (CP-05), sobre una persona ficticia propia, el documento `9999980001`, que borra al empezar y al terminar, así que se puede repetir. El entorno va con las contraseñas y la llave de API vacías: se llenan con las de `.env` y no se suben al repositorio. Se corre en Postman (*Run collection*) o con `npx newman run ...` (comando completo en `tests/postman/README.md`). No cubre la foto (se prueba con `bash services/ms-crear/verificar.sh` y la pantalla Crear), CP-07 (apagar ms-consultar, a mano) ni CP-09 y CP-10 (dependen de T15). Probado el 2026-11-22 con newman contra el sistema real: 54 peticiones y 80 comprobaciones sin fallos.
 - T13: pantallas **Consultar datos personales** (`/consultar`, los dos roles), **Borrar personas** (`/borrar`, administrador) y **Consultar log** (`/log`, los dos roles). Consultar y Borrar buscan por documento con la `BusquedaPorDocumento` de T12 y muestran una `FichaPersona` de solo lectura con la foto; Borrar pide confirmación nombrando a la persona (foco en «Cancelar») y solo entonces llama a `DELETE`. El log tiene filtros de tipo, documento y fechas que se combinan, tabla de 20 en 20 con fecha y hora en hora de Bogotá, un resumen legible del detalle y «Ver detalle completo». Si un servicio está apagado, `pedirApi` lo informa como «no disponible» y no como «persona inexistente». Ya no quedan pantallas en construcción. 20 pruebas nuevas en `npm test` (82 en total) y prueba completa en el navegador el 2026-11-23: con `admin.prueba`, consulta, documento inexistente, ms-consultar apagado y encendido (CP-07), borrado cancelado y confirmado, historial del borrado en el log (CP-05), paginación y filtros combinados con 25 registros de prueba (CP-06), sin resultados y fechas al revés; con `consultor.prueba`, menú de tres opciones, consulta, log y aviso de permiso en `/borrar`.
+- T15: flujo `Consulta en lenguaje natural` (`n8n/workflows/chat-consulta.json`, id `gdpChatConsulta1`, publicado): Chat Trigger protegido con la cuenta de n8n y con webhook fijo, AI Agent con Gemini `gemini-3.5-flash-lite`, memoria de sesión de 10 interacciones y dos herramientas: `consultar_personas` (SQL sobre `vista_personas`, con una barrera que solo deja pasar un `SELECT` y lo ejecuta como subconsulta, ver sección 7) y `buscar_personas_similares` (PGVector con `gemini-embedding-001`). Cada consulta queda en ms-log como `CONSULTA_NL`, con éxito o con error. `configurar.sh` crea la credencial `gdpCredMsLogKey1` con `N8N_LOG_API_KEY`, publica el chat y comprueba que quedó activo, y `.env.example` trae el valor de `N8N_CHAT_URL`. `n8n/verificar-chat.sh` lo comprueba (CP-09 y CP-10, que la colección de Postman no cubre): barrera SQL, las preguntas de la sección 7.1 del diseño, memoria, que el chat no pueda borrar y el registro en el log. Probado el 2026-11-23 con Gemini y PostgreSQL reales: todas las comprobaciones sin fallos, cada respuesta en menos de 11 s. Cómo está armado y cómo probarlo a mano: `n8n/README.md`.
 
-**Todavía no existe:** el flujo de chat de n8n (T15). La base de datos arranca vacía: los datos de prueba se cargan con `bash database/cargar-datos-prueba.sh` (T17), y después hay que ejecutar «Reindexar todo» en n8n.
+**Todavía no existe:** nada del núcleo del sistema. Quedan T18 y la entrega (T20 y T21). La base de datos arranca vacía: los datos de prueba se cargan con `bash database/cargar-datos-prueba.sh` (T17), y después hay que ejecutar «Reindexar todo» en n8n.
 
 **En curso:** ver la columna Estado del tablero.
 
@@ -130,6 +132,10 @@ Configuración inicial de n8n (una sola vez): `bash n8n/configurar.sh` carga las
 - (ninguno)
 
 **Avisos para el equipo:**
+- 2026-11-23, T15 (Daniel Mendez): cambió `n8n/configurar.sh` y el valor de `N8N_CHAT_URL` en `.env.example` (sección 8, punto 4).
+  - Después del pull, pon en tu `.env` `N8N_CHAT_URL=http://localhost:5678/webhook/6f1c2a10-0015-4a00-8000-000000000001/chat` (el valor está en `.env.example`) y recrea el frontend: `docker compose up -d frontend`. Sin eso, el menú sigue marcando el chat como «Todavía no está configurado».
+  - Vuelve a ejecutar `bash n8n/configurar.sh`: crea la credencial de ms-log, importa el flujo nuevo y lo publica. Exige `N8N_LOG_API_KEY` y `GEMINI_API_KEY` en `.env`.
+  - Para el chat, en <http://localhost:5678> hay que haber iniciado sesión con tu cuenta de n8n. Detalles en `n8n/README.md`, sección «El chat (T15)».
 - 2026-11-21, T14 (Claudia Elias): cambió `docker-compose.yml` (sección 8, punto 4).
   - `N8N_ENCRYPTION_KEY` ahora es obligatoria: sin ella `docker compose` no arranca. Después del pull, pon en tu `.env` una cadena aleatoria larga (en Git Bash: `openssl rand -hex 32`) y no la cambies después. Para indexar hace falta además `GEMINI_API_KEY` (gratis en Google AI Studio).
   - Después de arrancar, ejecuta una vez `bash n8n/configurar.sh`. El puerto 5678 debe estar libre.
@@ -165,7 +171,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**.
 | T12 | Formulario de persona con validaciones (crear y modificar) | frontend/ | T11, T06, T07 | Hecha | Claudia Elias | feat/T12-formulario-persona |
 | T13 | Pantallas de consultar, borrar y log | frontend/ | T11, T08, T09, T10 | Hecha | Claudia Elias | feat/T13-consultar-borrar-log |
 | T14 | n8n en Compose, flujo de indexación por webhook y flujo de reindexación completa | n8n/ | T03 | Hecha | Claudia Elias | feat/T14-n8n-indexacion |
-| T15 | Flujo de chat: agente con herramientas SQL y vectorial, Gemini, memoria y registro en ms-log | n8n/ | T14, T10 | Pendiente | | |
+| T15 | Flujo de chat: agente con herramientas SQL y vectorial, Gemini, memoria y registro en ms-log | n8n/ | T14, T10 | Hecha | Daniel Mendez | feat/T15-chat-rag |
 | T16 | Llamadas al webhook de indexación desde ms-crear, ms-modificar y ms-borrar | services/ | T06, T07, T09, T14 | Hecha | Carlos Ruidiaz | feat/T16-aviso-indexacion |
 | T17 | Script de datos de prueba (unas 20 personas ficticias) | database/ | T03 | Hecha | Juan Fernández | feat/T17-datos-de-prueba |
 | T18 | Pruebas unitarias y de integración (Jest) | services/, libs/ | T06 a T10 | En curso | Juan Fernández | feat/T18-pruebas-jest |
@@ -196,6 +202,12 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 
 | Fecha | Decisión | Motivo | Quién |
 | --- | --- | --- | --- |
+| 2026-11-23 | La herramienta SQL del agente no ejecuta tal cual la consulta del modelo. Una expresión del nodo `consultar_personas` solo deja pasar una sentencia `SELECT` o `WITH` que nombre `vista_personas`, sin punto y coma y sin `persona_embedding`, `log_transaccion`, `information_schema` ni `pg_*`, y la ejecuta como `SELECT * FROM (consulta) AS resultado LIMIT 100`. Si la sentencia no cumple, la herramienta devuelve una fila `error` | `usr_n8n` es dueño de `persona_embedding` (decisión de T03), así que la base de datos sola no le impide al modelo borrar el índice vectorial. Sin punto y coma no se pueden encadenar sentencias, y PostgreSQL no admite DML dentro de una subconsulta. `persona` y el log siguen protegidos por los permisos (CP-10) | Daniel Mendez |
+| 2026-11-23 | Chat de n8n con id de webhook fijo (`6f1c2a10-0015-4a00-8000-000000000001`) y autenticación con la cuenta de n8n. `N8N_CHAT_URL` lleva ese valor en `.env.example` | La URL es la misma en todos los equipos y el frontend la recibe sin pasos manuales. El diseño pide proteger el chat con la autenticación de n8n (sección 7.1) | Daniel Mendez |
+| 2026-11-23 | Modelo de chat `models/gemini-3.5-flash-lite` con temperatura 0 (Google retiró `gemini-2.5-flash-lite` para llaves nuevas: devolvía 404). Groq no se configura en T15: queda como cambio de un nodo si se agota la cuota | Flash-Lite tiene más cuota diaria (sección 12 del diseño). Configurar Groq exigiría otra llave obligatoria a todo el equipo | Daniel Mendez |
+| 2026-11-23 | Las instrucciones de sistema del agente son las de la sección 7.1 del diseño, más la fecha de hoy y unas indicaciones para escribir SQL: una sola consulta sin punto y coma, qué significan «más joven» y «mayor», ILIKE para nombres y los valores de las listas. También piden escribir las cantidades con cifras y las fechas como dd-mmm-yyyy | Así el modelo genera SQL válido y las respuestas se pueden comprobar en `verificar-chat.sh` | Daniel Mendez |
+| 2026-11-23 | El chat registra en ms-log con la credencial `httpHeaderAuth` `gdpCredMsLogKey1`, que crea `configurar.sh` a partir de `N8N_LOG_API_KEY`. Si ms-log no responde después de tres intentos, el chat entrega la respuesta de todos modos. Si el modelo falla, se registra `ERROR` con el motivo y el usuario ve un mensaje de reintento | La llave no queda en el flujo exportado. La consulta ya se hizo y negarle la respuesta al usuario no recupera el registro; el fallo queda en la ejecución de n8n | Daniel Mendez |
+| 2026-11-23 | Memoria de sesión en ventana de 10 interacciones (nodo Simple Memory), que se guarda en la memoria de n8n | Basta para preguntas de seguimiento como «¿y el mayor?» y no necesita tablas nuevas. Se pierde al reiniciar n8n, lo cual es aceptable para un chat | Daniel Mendez |
 | 2026-11-23 | La pantalla del log muestra la fecha y hora en la zona `America/Bogota`, fija en el frontend, como `dd-mmm-yyyy hh:mm:ss`. Los filtros de fecha se eligen con un calendario y viajan como `yyyy-mm-dd` | ms-log interpreta `desde` y `hasta` como días completos en su `TZ` (America/Bogota). Mostrar la hora en esa misma zona hace que lo que se ve coincida con lo que se filtra, aunque el navegador esté en otra zona | Claudia Elias |
 | 2026-11-23 | En el frontend, un 404 o un 502 sin cuerpo JSON se trata como «servicio no disponible» (`ErrorApi` con estado 503) | Con un microservicio apagado, Traefik responde 404 con texto plano. Sin esta regla, Consultar, Borrar o Modificar dirían «No hay una persona registrada» cuando el problema es que el servicio no está. Un 404 de un microservicio siempre trae JSON con su mensaje | Claudia Elias |
 | 2026-11-23 | ms-modificar avisa a n8n solo si cambió algún dato de la persona. Cambiar solo la foto, o guardar sin cambios, no avisa. ms-crear y ms-borrar avisan siempre que la operación sale bien. Ningún rechazo (400, 403, 404, 409) avisa | La foto no forma parte del texto indexado (`n8n/README.md`), así que reindexar en esos casos solo gastaría cuota gratuita de Gemini sin cambiar el vector | Carlos Ruidiaz |
