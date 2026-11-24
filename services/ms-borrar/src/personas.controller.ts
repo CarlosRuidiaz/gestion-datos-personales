@@ -1,6 +1,7 @@
-import { Controller, Delete, Get, HttpCode, HttpStatus, Param } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
+  errorDeCampos,
   Auditar,
   CONTEXTO_PREVIO_BORRAR,
   DocumentoPipe,
@@ -12,6 +13,9 @@ import {
   UsuarioAutenticado,
 } from '@gdp/common';
 import { PersonasService } from './personas.service';
+
+/** Lo que hay que escribir para borrar todas las personas (T30). */
+export const CONFIRMACION_BORRAR_TODAS = 'BORRAR TODAS';
 
 @ApiTags('personas')
 @ApiBearerAuth()
@@ -32,6 +36,27 @@ export class PersonasController {
     @UsuarioActual() usuario: UsuarioAutenticado,
   ): Promise<PersonaRespuesta> {
     return this.personas.buscar(documento, usuario);
+  }
+
+  @Delete()
+  @Auditar(TipoTransaccion.BORRAR, 'Borrar todas las personas')
+  @ApiOperation({
+    summary: 'Borra TODAS las personas, una por una y cada una con su registro en el log. El log se conserva',
+  })
+  @ApiQuery({ name: 'confirmacion', required: true, description: `Debe ser exactamente «${CONFIRMACION_BORRAR_TODAS}»` })
+  @ApiResponse({ status: 200, description: '{ borradas }' })
+  @ApiResponse({ status: 400, description: 'Falta la confirmación' })
+  borrarTodas(
+    @Query('confirmacion') confirmacion: string | undefined,
+    @UsuarioActual() usuario: UsuarioAutenticado,
+  ): Promise<{ borradas: number }> {
+    if (confirmacion !== CONFIRMACION_BORRAR_TODAS) {
+      throw errorDeCampos(
+        [{ campo: 'confirmacion', mensaje: `Para borrar todas las personas escribe ${CONFIRMACION_BORRAR_TODAS}` }],
+        'Falta confirmar el borrado de todas las personas',
+      );
+    }
+    return this.personas.borrarTodas(usuario);
   }
 
   @Delete(':documento')

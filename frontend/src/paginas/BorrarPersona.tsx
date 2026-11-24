@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { ErrorApi, pedirApi } from '../api/cliente';
 import { Alerta } from '../componentes/Alerta';
+import { BorrarTodas } from '../componentes/BorrarTodas';
 import { BusquedaPorDocumento } from '../componentes/BusquedaPorDocumento';
 import { FichaPersona, nombreCompleto } from '../persona/FichaPersona';
 import type { PersonaApi } from '../persona/tipos';
@@ -76,6 +77,7 @@ export function BorrarPersona() {
         <h1>Borrar personas</h1>
         <p className="nota">Busca a la persona por su documento. Antes de borrar podrás revisar sus datos.</p>
         <BusquedaPorDocumento ruta={RUTA} alEncontrar={setPersona} />
+        <BorrarTodas />
       </section>
     );
   }

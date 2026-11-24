@@ -6,6 +6,7 @@ Microservicio NestJS de la opción **Borrar Personas** (tarea T09). Ruta en el g
 | --- | --- | --- |
 | `GET /api/borrar/personas/{documento}` | administrador | 200, 400, 401, 403, 404 |
 | `DELETE /api/borrar/personas/{documento}` | administrador | 204, 400, 401, 403, 404 |
+| `DELETE /api/borrar/personas?confirmacion=BORRAR TODAS` | administrador | 200 `{ borradas }`, 400 sin la confirmación exacta, 401, 403. Borra todas las personas (T30) |
 | `GET /api/borrar/docs` | sin token | Documentación OpenAPI (`/api/borrar/docs-json` en JSON) |
 
 ## Cómo se usa (CU-06)
@@ -14,6 +15,10 @@ Microservicio NestJS de la opción **Borrar Personas** (tarea T09). Ruta en el g
 2. **Borrar (`DELETE`).** Lo llama el frontend solo cuando el usuario confirma. Responde 204 sin cuerpo. El borrado y su registro de log van en una transacción. El detalle del log guarda los datos que tenía la persona en `anterior` (sin la foto ni las fechas de creación y actualización) y `teniaFoto`, así su historial queda completo aunque la persona ya no exista (CP-05).
 
 Los rechazos (400, 403 y 404) quedan en el log con resultado `ERROR`. Borrar dos veces la misma persona da 404 la segunda vez.
+
+## Borrar todas las personas (T30)
+
+Para dejar la base vacía antes de importar los datos del profesor. En la pantalla «Borrar personas», debajo de la búsqueda, hay que escribir `BORRAR TODAS` para confirmar. El servicio borra las personas una por una con el mismo método que el borrado individual: cada una tiene su `BORRAR` en el log con los datos que tenía, y su aviso a n8n para quitar el vector. El log no se toca. `services/ms-crear/verificar-importacion.sh` comprueba los permisos y la confirmación sin borrar nada de verdad.
 
 ## Verificar
 

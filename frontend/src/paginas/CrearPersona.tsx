@@ -34,7 +34,12 @@ export function CrearPersona() {
   return (
     <section className="pantalla">
       <h1>Crear personas</h1>
-      <p className="nota">Los campos con * son obligatorios.</p>
+      <p className="nota">
+        Los campos con * son obligatorios. ¿Tienes los datos en un Excel?{' '}
+        <Link to="/crear/importar" data-enlace="importar">
+          Importar personas desde un archivo
+        </Link>
+      </p>
       {errores && <Alerta tipo="error">{errores.general}</Alerta>}
       <FormularioPersona
         key={version}
