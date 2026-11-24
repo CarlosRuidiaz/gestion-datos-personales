@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ErrorApi, pedirApi } from '../api/cliente';
 import { Rol } from '../auth/roles';
-import { FichaPersona, nombreCompleto } from '../persona/FichaPersona';
+import { celularLegible, FichaPersona, nombreCompleto } from '../persona/FichaPersona';
 import type { PersonaApi } from '../persona/tipos';
 import { ConfirmacionBorrado } from './BorrarPersona';
 import { Consultar } from './Consultar';
@@ -29,13 +29,23 @@ const marta: PersonaApi = {
 };
 
 describe('ficha de persona (CU-04)', () => {
-  it('muestra todos los datos, la fecha como dd-mmm-yyyy y la foto', () => {
+  it('muestra primero el documento y el nombre, después los demás datos, la fecha como dd-mmm-yyyy y la foto', () => {
     const html = dibujar(<FichaPersona persona={marta} />);
-    for (const texto of ['Cédula', '9999999981', 'Marta', 'Rojas Vega', '12-ago-1995', 'Femenino', 'marta.prueba@ejemplo.com', '3011112233']) {
+    expect(html).toContain('<p class="tipo-documento">Cédula</p>');
+    expect(html).toMatch(/class="numero-documento"[^>]*>9999999981</);
+    expect(html).toContain('<h2 class="nombre-persona">Marta Rojas Vega</h2>');
+    for (const texto of ['12-ago-1995', 'Femenino', 'marta.prueba@ejemplo.com', '301 111 2233']) {
       expect(html).toContain(`<dd>${texto}</dd>`);
     }
+    expect(html.indexOf('9999999981')).toBeLessThan(html.indexOf('Fecha de nacimiento'));
+    expect(html.indexOf('Género')).toBeLessThan(html.indexOf('<hr/>'));
+    expect(html.indexOf('<hr/>')).toBeLessThan(html.indexOf('Correo electrónico'));
     expect(html).toContain('src="data:image/png;base64,AAAA"');
-    expect(html).toContain('No registrado'); // el segundo nombre vacío
+  });
+
+  it('agrupa el celular de a 3, 3 y 4 cifras solo si tiene 10', () => {
+    expect(celularLegible('3011112233')).toBe('301 111 2233');
+    expect(celularLegible('12345')).toBe('12345');
   });
 
   it('sin foto lo dice', () => {

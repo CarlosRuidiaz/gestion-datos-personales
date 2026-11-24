@@ -139,7 +139,7 @@ export function FormularioPersona({
               {mensaje('tipoDocumento')}
             </Campo>
 
-            <Campo etiqueta="Nro. Documento" para={`${id}-numeroDocumento`} obligatorio={modo === 'crear'}>
+            <Campo etiqueta="Nro. Documento" para={`${id}-numeroDocumento`} obligatorio={modo === 'crear'} corto>
               {modo === 'crear' ? (
                 <input {...texto('numeroDocumento')} inputMode="numeric" maxLength={LONGITUD.numeroDocumento} autoComplete="off" />
               ) : (
@@ -164,7 +164,7 @@ export function FormularioPersona({
               {mensaje('apellidos')}
             </Campo>
 
-            <Campo etiqueta="Fecha de nacimiento" para={`${id}-fechaNacimiento`} obligatorio>
+            <Campo etiqueta="Fecha de nacimiento" para={`${id}-fechaNacimiento`} obligatorio corto>
               <div className="fecha">
                 <input {...texto('fechaNacimiento')} placeholder="dd-mmm-aaaa" autoComplete="off" />
                 <input
@@ -237,7 +237,7 @@ export function FormularioPersona({
             {mensaje('correo')}
           </Campo>
 
-          <Campo etiqueta="Celular" para={`${id}-celular`} obligatorio>
+          <Campo etiqueta="Celular" para={`${id}-celular`} obligatorio corto>
             <input {...texto('celular')} inputMode="numeric" maxLength={LONGITUD.celular} autoComplete="off" />
             {mensaje('celular')}
           </Campo>
@@ -259,16 +259,19 @@ function Campo({
   para,
   obligatorio = false,
   ancho = false,
+  corto = false,
   children,
 }: {
   etiqueta: string;
   para: string;
   obligatorio?: boolean;
   ancho?: boolean;
+  /** Contenido corto (documento, fecha, celular): el campo no ocupa toda la columna. */
+  corto?: boolean;
   children: ReactNode;
 }) {
   return (
-    <div className={ancho ? 'campo ancho' : 'campo'}>
+    <div className={['campo', ancho && 'ancho', corto && 'corto'].filter(Boolean).join(' ')}>
       <label htmlFor={para}>
         {etiqueta}
         {obligatorio && (

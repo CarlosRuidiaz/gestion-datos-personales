@@ -151,8 +151,8 @@ export function ConsultarLog() {
         {datos && datos.total > 0 && (
           <>
             <p className="resumen-log">
-              {datos.total === 1 ? '1 transacción' : `${datos.total} transacciones`} · Página {datos.pagina} de{' '}
-              {paginas} · Hora de Bogotá
+              {datos.total === 1 ? '1 transacción' : `${datos.total} transacciones`}. Página {datos.pagina} de {paginas}.
+              Fecha y hora de Bogotá.
             </p>
             <TablaLog registros={datos.registros} />
             {paginas > 1 && (
