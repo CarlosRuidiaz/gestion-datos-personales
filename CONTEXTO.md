@@ -3,8 +3,8 @@
 > Este es el documento de contexto del repositorio. Cualquier integrante del equipo, o la IA que use, debe leerlo completo antes de trabajar.
 > Uso: haz `git pull`, abre tu IA en la carpeta del repositorio y pídele «Lee CONTEXTO.md y dime en qué estado está el proyecto y qué me toca hacer».
 
-**Última actualización:** 2026-11-23, por Carlos Ruidiaz (tareas T24 y T25)
-**Fase actual:** Fase 4 · Rediseño visual hecho (T23). Interruptor de Consultar y datos del profesor hechos (T24 y T25). Queda T26 para la sustentación
+**Última actualización:** 2026-11-23, por Carlos Ruidiaz (tarea T26)
+**Fase actual:** Fase 4 · Rediseño visual hecho (T23). Interruptor de Consultar y datos del profesor hechos (T24 y T25). T26 hecha. Para la sustentación solo faltan los datos del profesor
 
 ---
 
@@ -134,8 +134,9 @@ Configuración inicial de n8n (una sola vez): `bash n8n/configurar.sh` carga las
 - T27: `docs/sustentacion.md` con cómo es la sustentación (según un grupo que ya presentó), lo que falta preparar (T24 a T26), la lista para el día anterior, el guion de la demostración y las preguntas probables.
 - T24: interruptor de Consultar en el menú principal (solo administrador). `ms-control` (`/api/control`) detiene y arranca los contenedores de ms-consultar a través de `docker-proxy`, que con la configuración de `services/ms-control/docker-proxy.cfg` solo deja listar, detener y arrancar. El frontend revisa el health al cambiarlo y muestra «Apagando…» o «Encendiendo…» hasta que se confirma. Probado: `services/ms-control/verificar.sh` (26 comprobaciones, TODO BIEN el 2026-11-23), 8 pruebas unitarias y 2 del frontend (88 en total, con el rediseño de T23). Probado en el navegador con `admin.prueba`, con el estilo del rediseño: apagar marca Consultar como «No disponible» en el menú y en la barra lateral y deja el contenedor `exited`; encender lo devuelve. Sin desplazamiento horizontal a 375 px.
 - T25: `database/cargar-datos-profesor.sh` deja la base solo con `database/datos-profesor.sql` (se crea desde `datos-profesor.plantilla.sql` y no se sube): en una transacción vacía personas, log e índice y carga las personas con su `CREAR`; luego reindexa el chat con el CLI de n8n. Probado con datos ficticios: carga, rechazo completo si una fila es inválida y aviso si falta el archivo. La reindexación no se probó en este equipo (n8n sin configurar ni `GEMINI_API_KEY`).
+- T26: ningún campo de texto del frontend tiene `maxLength` (formulario de persona, búsqueda por documento y filtro del log). Antes el navegador cortaba lo escrito o pegado sin avisar, y un celular de 11 dígitos quedaba cortado a 10 y válido. Ahora el valor completo llega a la validación y se ve su mensaje («El segundo nombre no puede tener más de 30 caracteres», «El celular debe tener exactamente 10 dígitos»). Probado en el navegador con un segundo nombre de 32 caracteres y un celular de 11 dígitos; 89 pruebas del frontend.
 
-**Todavía no existe:** nada del núcleo del sistema. Para la sustentación falta T26 (errores de nombres largos) y poner en `database/datos-profesor.sql` los datos del correo del profesor cuando lleguen (ver `docs/sustentacion.md`); el rediseño (T23) ya está hecho. T21 se descartó. La base de datos arranca vacía: los datos de prueba se cargan con `bash database/cargar-datos-prueba.sh` (T17), y después hay que ejecutar «Reindexar todo» en n8n.
+**Todavía no existe:** nada del núcleo del sistema. Para la sustentación solo falta poner en `database/datos-profesor.sql` los datos del correo del profesor cuando lleguen (ver `docs/sustentacion.md`); el rediseño (T23) ya está hecho. T21 se descartó. La base de datos arranca vacía: los datos de prueba se cargan con `bash database/cargar-datos-prueba.sh` (T17), y después hay que ejecutar «Reindexar todo» en n8n.
 
 **En curso:** ver la columna Estado del tablero.
 
@@ -193,7 +194,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**, **Descartada**.
 | T23 | Aplicar el rediseño visual al frontend según `docs/rediseno/` | frontend/ | T22 | Hecha | Claudia Elias | feat/T23-rediseno-visual |
 | T24 | Interruptor en la aplicación para apagar y encender Consultar (detiene y arranca el contenedor ms-consultar). Ver `docs/sustentacion.md` | services/ms-control/, frontend/, docker-compose.yml | T08, T11 | Hecha | Carlos Ruidiaz | feat/T24-interruptor-consultar |
 | T25 | Script para dejar la base solo con los datos del profesor (vaciar personas, log e índice, cargar sus datos y reindexar). Espera los datos del correo | database/ | T17 | Hecha | Carlos Ruidiaz | feat/T24-interruptor-consultar |
-| T26 | Que el formulario muestre el error de nombres y apellidos demasiado largos en vez de cortar lo escrito | frontend/ | T12 | En curso | Carlos Ruidiaz | feat/T26-errores-de-longitud |
+| T26 | Que el formulario muestre el error de nombres y apellidos demasiado largos en vez de cortar lo escrito | frontend/ | T12 | Hecha | Carlos Ruidiaz | feat/T26-errores-de-longitud |
 | T27 | Guion y lista de preparación de la sustentación | docs/ | | Hecha | Carlos Ruidiaz | feat/T27-guion-sustentacion |
 
 Después de T05, el trabajo se puede repartir en cuatro frentes paralelos con poco cruce: microservicios (T06 a T10), frontend (T11 a T13), n8n (T14 a T16) y calidad (T17 a T19).

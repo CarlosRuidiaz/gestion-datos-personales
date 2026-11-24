@@ -116,7 +116,7 @@ export function ConsultarLog() {
         </div>
         <div className="campo">
           <label htmlFor="filtro-documento">Número de documento</label>
-          <input {...atributos('documento')} inputMode="numeric" maxLength={10} autoComplete="off" />
+          <input {...atributos('documento')} inputMode="numeric" autoComplete="off" />
           {ayudaError('documento')}
         </div>
         <div className="campo">
