@@ -47,6 +47,19 @@ describe('menú principal', () => {
     expect(dibujar(<Menu />)).toContain('Todavía no está configurado');
   });
 
+  it('el administrador ve el interruptor de Consultar (T24)', () => {
+    sesion = { usuario: { nombre: 'admin.prueba', roles: [Rol.ADMINISTRADOR] }, consultarDisponible: true };
+    const html = dibujar(<Menu />);
+    expect(html).toContain('data-interruptor="consultar"');
+    expect(html).toContain('role="switch"');
+    expect(html).toContain('Servicio Consultar');
+  });
+
+  it('el consultor no ve el interruptor de Consultar', () => {
+    sesion = { usuario: { nombre: 'consultor.prueba', roles: [Rol.CONSULTOR] }, consultarDisponible: true };
+    expect(dibujar(<Menu />)).not.toContain('data-interruptor');
+  });
+
   it('un usuario sin rol de la aplicación recibe un aviso', () => {
     sesion = { usuario: { nombre: 'otro', roles: [] }, consultarDisponible: true };
     expect(dibujar(<Menu />)).toContain('no tiene un rol de la aplicación');

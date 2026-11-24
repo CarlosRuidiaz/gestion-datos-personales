@@ -1,0 +1,90 @@
+/* Interruptor de Consultar (T24). Usa las variables de estilos.css, con valores de respaldo. */
+.interruptor-consultar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--superficie, #fff);
+  border: 1px solid var(--borde, #d9dee4);
+  border-radius: 0.5rem;
+}
+
+.interruptor-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.interruptor-titulo {
+  font-weight: 600;
+}
+
+.interruptor-ayuda {
+  color: var(--texto-suave, #52606d);
+  font-size: 0.9rem;
+}
+
+.interruptor {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.25rem 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.interruptor:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.interruptor:focus-visible {
+  outline: 2px solid var(--primario, #1f5fa8);
+  outline-offset: 3px;
+  border-radius: 0.25rem;
+}
+
+.interruptor-pista {
+  position: relative;
+  width: 2.75rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: var(--borde, #d9dee4);
+  transition: background 0.15s ease;
+}
+
+.interruptor.encendido .interruptor-pista {
+  background: var(--primario, #1f5fa8);
+}
+
+.interruptor-perilla {
+  position: absolute;
+  top: 0.1875rem;
+  left: 0.1875rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s ease;
+}
+
+.interruptor.encendido .interruptor-perilla {
+  transform: translateX(1.25rem);
+}
+
+.interruptor-estado {
+  min-width: 6.5rem;
+  font-weight: 600;
+}
+
+.interruptor-error {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--error, #b42318);
+}

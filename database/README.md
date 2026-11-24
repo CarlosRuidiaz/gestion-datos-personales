@@ -9,6 +9,8 @@ Scripts de la base de datos PostgreSQL 16 con pgvector. Referencia: secciones 6.
 | `verificar.sh` | Comprueba que el esquema, las restricciones y los permisos coinciden con el diseño |
 | `datos-prueba.sql` | 20 personas ficticias y un registro `CREAR` en el log por cada una (usuario `datos-prueba`) |
 | `cargar-datos-prueba.sh` | Ejecuta `datos-prueba.sql` en el contenedor `postgres` |
+| `datos-profesor.plantilla.sql` | Plantilla para los datos que manda el profesor para la sustentación (T25) |
+| `cargar-datos-profesor.sh` | Vacía personas, log e índice del chat, carga `datos-profesor.sql` y reindexa el chat (T25) |
 
 ## Cuándo se ejecutan
 
@@ -40,6 +42,23 @@ bash database/cargar-datos-prueba.sh
 Se puede repetir sin duplicar nada: una persona que ya existe no se vuelve a insertar y tampoco recibe otro registro de log. No necesita Keycloak ni los microservicios. Después hay que ejecutar **Reindexar todo** en n8n para que el chat conozca a las personas (ver `n8n/README.md`).
 
 Los registros de log de estos datos llevan el usuario `datos-prueba`, así se distinguen de los de usuarios reales. Si recreas el volumen (`docker compose down -v`) se pierde todo y hay que volver a cargar.
+
+## Dejar solo los datos del profesor (sustentación)
+
+En la sustentación el profesor pide dejar la base solo con las personas que mandó por correo (ver `docs/sustentacion.md`).
+
+1. Copia `database/datos-profesor.plantilla.sql` como `database/datos-profesor.sql`. Ese archivo está en `.gitignore`: cada quien lo pone en su copia y no se sube.
+2. Reemplaza la fila de ejemplo por una fila por persona del correo.
+3. Ejecuta, desde la raíz:
+
+```bash
+bash database/cargar-datos-profesor.sh        # pide escribir SI
+bash database/cargar-datos-profesor.sh --si   # sin preguntar
+```
+
+El script **borra todas las personas, todo el log y el índice del chat**. Después carga las personas con su registro `CREAR` (usuario `datos-profesor`) y ejecuta «Reindexar todo» en n8n. El vaciado y la carga van en una sola transacción: si una fila no cumple las validaciones, por ejemplo un segundo nombre de más de 30 caracteres, no se carga nada y la base queda como estaba. Las personas con datos inválidos a propósito se dejan fuera del archivo y se prueban en el formulario durante la demostración.
+
+Si la reindexación falla (n8n sin configurar o sin `GEMINI_API_KEY`), los datos quedan cargados y el script indica cómo reindexar a mano.
 
 ## Usuarios y permisos
 

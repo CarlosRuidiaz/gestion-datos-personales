@@ -10,7 +10,7 @@
   "scripts": {
     "build:common": "npm run build -w @gdp/common",
     "test:common": "npm test -w @gdp/common",
-    "test:services": "npm test -w ms-crear -w ms-modificar -w ms-consultar -w ms-borrar -w ms-log",
+    "test:services": "npm test -w ms-crear -w ms-modificar -w ms-consultar -w ms-borrar -w ms-log -w ms-control",
     "test": "npm run test:common && npm run test:services"
   },
   "engines": {

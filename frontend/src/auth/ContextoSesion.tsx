@@ -6,13 +6,19 @@ interface DatosDeSesion {
   usuario: Usuario;
   /** null mientras se hace la primera revisión de /api/consultar/health. */
   consultarDisponible: boolean | null;
+  /** Vuelve a revisar el health de Consultar en el momento (T24). */
+  revisarConsultar: () => Promise<void>;
 }
 
 const Contexto = createContext<DatosDeSesion | null>(null);
 
 export function ProveedorDeSesion({ usuario, children }: { usuario: Usuario; children: ReactNode }) {
-  const consultarDisponible = useConsultarDisponible();
-  return <Contexto.Provider value={{ usuario, consultarDisponible }}>{children}</Contexto.Provider>;
+  const { disponible, revisar } = useConsultarDisponible();
+  return (
+    <Contexto.Provider value={{ usuario, consultarDisponible: disponible, revisarConsultar: revisar }}>
+      {children}
+    </Contexto.Provider>
+  );
 }
 
 /** Usuario autenticado y estado de Consultar, para cualquier página. */

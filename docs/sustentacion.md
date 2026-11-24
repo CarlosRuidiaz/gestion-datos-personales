@@ -22,49 +22,36 @@ Lo que sigue lo contó un compañero de otro grupo que ya presentó (2026-11-23)
 
 | Pendiente | Tarea | Estado |
 | --- | --- | --- |
-| Interruptor de Consultar en la aplicación | T24 | Ver tablero |
-| Script para dejar la base solo con los datos del profesor | T25 | Espera los datos del correo |
+| Interruptor de Consultar en la aplicación | T24 | Hecho |
+| Script para dejar la base solo con los datos del profesor | T25 | Script hecho. Falta poner los datos del correo en `database/datos-profesor.sql` |
 | Mensaje de error visible para nombres de más de 30 caracteres | T26 | Ver tablero |
 | Rediseño visual | T23 | Ver tablero (no es requisito para presentar) |
 
 ### 2.1 T24: interruptor de Consultar
 
-Hoy Consultar se apaga con `docker compose stop ms-consultar` (decisión DD-04 del diseño). El profesor quiere hacerlo desde la aplicación, así que el botón debe **detener y arrancar de verdad el contenedor**. Si lo revisa en Docker, tiene que verlo detenido.
+En el menú principal, solo para el administrador, hay un interruptor «Servicio Consultar».
+- Al apagarlo, `ms-control` detiene de verdad el contenedor de ms-consultar: en Docker Desktop se ve detenido.
+- La opción Consultar pasa a «No disponible en este momento» en unos segundos, sin recargar la página.
+- Al encenderlo, muestra «Encendiendo…» hasta que Consultar vuelve a responder.
 
-Propuesta:
+Cómo está hecho, en `services/ms-control/README.md`. En resumen, para explicarlo si pregunta:
+- Un microservicio más, `ms-control`, solo para el administrador.
+- `ms-control` no toca Docker directamente. Le pide a `docker-proxy`, que solo deja listar, detener y arrancar contenedores.
+- Traefik quita la ruta de Consultar en cuanto el contenedor se detiene, y la vuelve a poner cuando arranca.
+- El comando `docker compose stop ms-consultar` sigue funcionando igual.
 
-- **`ms-control`**, un microservicio NestJS pequeño, en `services/ms-control/`.
-  - Rutas detrás de Traefik en `/api/control`:
-    - `GET /api/control/consultar` devuelve `{ encendido, replicas }`.
-    - `POST /api/control/consultar/apagar` y `POST /api/control/consultar/encender`.
-  - Solo para el rol `administrador`, con el guard JWT de `@gdp/common`.
-  - Cada apagado y encendido queda en el log, como el resto de transacciones (hay que decidir el tipo, por ejemplo `CONTROL`. La restricción `log_tipo_chk` de `database/init.sql` solo admite los cinco tipos actuales, así que hay que ampliarla; también el filtro de tipo de la pantalla del log y ms-log).
-- **Acceso a Docker a través de un proxy del socket**, por ejemplo `tecnativa/docker-socket-proxy` con `CONTAINERS=1` y `POST=1`.
-  - `ms-control` no monta `/var/run/docker.sock`: le habla al proxy por una red interna propia.
-  - El proxy no publica puertos.
-- **Cómo detiene y arranca:** busca los contenedores con la etiqueta `com.docker.compose.service=ms-consultar` y los detiene o arranca todos. Así también funciona con varias réplicas.
-  - El botón solo enciende contenedores que ya existen. Por eso el sistema se arranca como siempre, con `--profile consultar`.
-  - Traefik quita y vuelve a poner la ruta solo.
-- **Frontend:** un interruptor «Consultar: encendido / apagado» visible solo para el administrador, en el menú principal.
-  - Al cambiarlo, vuelve a revisar `/api/consultar/health`, para que la opción pase a «no disponible» o vuelva sin recargar la página.
-  - Mientras el contenedor arranca, muestra «Encendiendo…» hasta que el health responda 200.
-- **Registro:** es un cambio al diseño (DD-04 pasa de «comando» a «comando o botón»). Se anota en la sección 7 de `CONTEXTO.md`.
-- **Comprobación:**
-  - Agregar a `services/ms-consultar/verificar.sh`, o a un `verificar.sh` propio, una prueba que apague y encienda desde la API.
-  - Comprobar que Crear, Modificar, Borrar, Log y el chat siguen funcionando con Consultar apagado (CP-07).
+Para ensayarlo: `bash services/ms-control/verificar.sh`.
 
 ### 2.2 T25: datos del profesor
 
-Cuando lleguen los datos del correo:
+Cuando lleguen los datos del correo, sigue los pasos de `database/README.md` («Dejar solo los datos del profesor»):
 
-- Se guardan en `database/datos-profesor.sql`, con el mismo formato que `datos-prueba.sql`. Son datos que dio el profesor para la prueba, no datos personales reales del equipo.
-- Se agrega `database/cargar-datos-profesor.sh`, que hace esto en orden:
-  1. Vacía `persona`, `persona_embedding` y `log_transaccion`.
-  2. Carga las personas con su registro `CREAR` en el log.
-  3. Recuerda ejecutar «Reindexar todo» en n8n.
-- Se ensaya con las preguntas que se crea que hará el profesor, y se anotan aquí las respuestas esperadas.
+1. Copia `database/datos-profesor.plantilla.sql` como `database/datos-profesor.sql` (no se sube al repositorio) y pon una fila por persona.
+2. Deja **fuera** del archivo a la persona con datos inválidos a propósito (por ejemplo, el segundo nombre de más de 30 caracteres). Si una fila no cumple las validaciones, el script no carga nada. Esa persona se prueba en el formulario, para mostrar el mensaje de error.
+3. Ejecuta `bash database/cargar-datos-profesor.sh`. Borra personas, log e índice, carga los datos y reindexa el chat.
+4. Ensaya con las preguntas que se crea que hará el profesor y anota aquí las respuestas esperadas.
 
-Si en la sustentación pide «borrar todo», se corre este script. No hace falta borrar persona por persona.
+Si en la sustentación pide «borrar todo y dejar solo mis datos», se corre `bash database/cargar-datos-profesor.sh --si`. No hace falta borrar persona por persona.
 
 ### 2.3 T26: nombres demasiado largos
 
@@ -80,7 +67,8 @@ El día anterior:
 
 - [ ] `git pull` en el equipo con el que se va a presentar.
 - [ ] `docker compose --profile consultar up -d --build`, con todos los contenedores `healthy`.
-- [ ] Cargar los datos del profesor (T25) y ejecutar «Reindexar todo» en n8n.
+- [ ] Cargar los datos del profesor con `bash database/cargar-datos-profesor.sh` (T25). Debe terminar en «Listo».
+- [ ] Probar el interruptor de Consultar: apagar y encender una vez.
 - [ ] Revisar que `GEMINI_API_KEY` esté en `.env` y que el chat responda. Llevar datos móviles por si falla el internet (riesgo de la sección 12 del diseño).
 - [ ] Tener abiertas las pestañas:
   - la aplicación en <http://localhost>, con sesión de `admin.prueba`;
@@ -108,9 +96,9 @@ Cada paso termina en el log cuando hay un cambio.
 | 4 | Intentar crear con datos inválidos | El mensaje dice qué campo falla. El backend también lo rechaza |
 | 5 | Modificar la persona y ver el log | El log guarda el valor anterior y el nuevo de cada campo cambiado |
 | 6 | Consultar la ficha | ms-consultar es un contenedor independiente |
-| 7 | Apagar Consultar con el interruptor (T24) | La opción queda como no disponible y Crear, Modificar, Borrar y Log siguen funcionando. Mostrar en Docker el contenedor detenido y volver a encenderlo |
+| 7 | Apagar Consultar con el interruptor del menú (T24) | La opción queda como no disponible y Crear, Modificar, Borrar y Log siguen funcionando. Mostrar en Docker el contenedor detenido y volver a encenderlo |
 | 8 | Borrar con confirmación y ver el log | El detalle del log conserva los datos que tenía la persona |
-| 9 | Dejar la base solo con sus datos (T25) | Script de carga y «Reindexar todo» |
+| 9 | Dejar la base solo con sus datos (T25) | `bash database/cargar-datos-profesor.sh --si`: vacía, carga y reindexa el chat |
 | 10 | Chat en lenguaje natural | Agente de n8n con dos herramientas: SQL de solo lectura sobre `vista_personas` y búsqueda vectorial con pgvector (RAG). Gemini como modelo. Cada consulta queda en el log |
 | 11 | Entrar como consultor | Solo ve Consultar, Consultar en lenguaje natural y Log (sección 2.2 del diseño) |
 
