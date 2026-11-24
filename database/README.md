@@ -10,8 +10,8 @@ Scripts de la base de datos PostgreSQL 16 con pgvector. Referencia: secciones 6.
 | `datos-prueba.sql` | 20 personas ficticias y un registro `CREAR` en el log por cada una (usuario `datos-prueba`) |
 | `cargar-datos-prueba.sh` | Ejecuta `datos-prueba.sql` en el contenedor `postgres` |
 | `datos-profesor.plantilla.sql` | Plantilla para los datos que manda el profesor para la sustentación (T25) |
-| `cargar-datos-profesor.sh` | Vacía personas, log e índice del chat, carga `datos-profesor.csv` o `datos-profesor.sql` y reindexa el chat (T25 y T28) |
-| `datos-profesor-csv.mjs` | Convierte el CSV del profesor en SQL: reconoce columnas y valores comunes y deja fuera las filas inválidas (T28) |
+| `cargar-datos-profesor.sh` | Vacía personas, log e índice del chat, carga los datos de `datos-profesor/` (o `datos-profesor.sql`) con sus fotos y reindexa el chat (T25, T28 y T29) |
+| `datos-profesor.mjs` | Convierte el Excel o CSV del profesor y su zip de fotos en SQL: reconoce columnas y valores comunes y deja fuera las filas inválidas (T28 y T29) |
 
 ## Cuándo se ejecutan
 
@@ -46,31 +46,40 @@ Los registros de log de estos datos llevan el usuario `datos-prueba`, así se di
 
 ## Dejar solo los datos del profesor (sustentación)
 
-En la sustentación el profesor pide dejar la base solo con las personas que mandó por correo (ver `docs/sustentacion.md`).
+En la sustentación el profesor pide dejar la base solo con las personas que mandó por correo (ver `docs/sustentacion.md`). Por lo que recibió otro grupo, llegan un Excel (`grupo_N.xlsx`, una fila por persona, con las mismas columnas del formulario y una columna «Foto») y un zip con las fotos (`archivos_jpg.zip`). Varias personas pueden compartir la misma foto.
 
-**Con su Excel (lo más fácil).** Ábrelo, elige *Guardar como* → *CSV (delimitado por comas)* o *CSV UTF-8* y guárdalo como `database/datos-profesor.csv`. Luego, desde la raíz:
+1. Crea la carpeta `database/datos-profesor/` y pon ahí **los dos archivos tal como llegaron**, sin abrirlos ni convertirlos. Está en `.gitignore`: no se sube.
+2. En cuanto lleguen, desde la raíz:
 
 ```bash
-bash database/cargar-datos-profesor.sh --revisar   # muestra qué columnas reconoció y qué filas quedan fuera; no toca la base
-bash database/cargar-datos-profesor.sh             # pide escribir SI y carga
+bash database/cargar-datos-profesor.sh --revisar   # qué columnas y fotos reconoció y qué filas quedan fuera; no toca la base
+```
+
+3. Para cargar (borra todo lo anterior):
+
+```bash
+bash database/cargar-datos-profesor.sh             # pide escribir SI
 bash database/cargar-datos-profesor.sh --si        # sin preguntar (en la sustentación)
 ```
 
-Corre `--revisar` en cuanto llegue el correo, no el día de la sustentación. El conversor (`datos-profesor-csv.mjs`, necesita Node.js 22 o superior) acepta:
+El conversor es `datos-profesor.mjs` (Node.js 22 o superior, sin dependencias: lee el .xlsx y el .zip por su cuenta). Acepta:
 
-- separador coma, punto y coma o tabulador; UTF-8 o Windows-1252 (el CSV normal de Excel en español);
-- encabezados con distintos nombres, sin importar tildes ni mayúsculas: «Documento», «No. Identificación», «Tipo doc», «Nombres» (el primero es el primer nombre y el resto el segundo), «Primer apellido» y «Segundo apellido» (se unen), «Sexo», «E-mail», «Teléfono»...;
-- valores como `CC` y `TI`, `M` y `F`, fechas `dd/mm/aaaa`, `aaaa-mm-dd`, `dd-mmm-aaaa` o el número de fecha de Excel, documentos con puntos (`1.043.123.456`) y celulares con espacios o `+57`.
+- **Datos:** un `.xlsx` (primera hoja) o un `.csv` (coma, punto y coma o tabulador; UTF-8 o Windows-1252). Uno solo por carpeta.
+- **Fotos:** uno o varios `.zip` y también imágenes sueltas en la carpeta. Se buscan por el nombre que dice la columna «Foto», sin importar mayúsculas ni subcarpetas del zip. Deben ser JPG o PNG (se revisa el contenido, no la extensión) de hasta 2 MB.
+- **Encabezados** con distintos nombres, sin importar tildes ni mayúsculas: «Número Documento», «No. Identificación», «Tipo doc», «Nombres» (el primero es el primer nombre y el resto el segundo), «Primer apellido» y «Segundo apellido» (se unen), «Sexo», «Email», «Teléfono», «Foto» o «Imagen»...
+- **Valores** como `Cédula`, `CC`, `TI`, `M`, `F`, fechas `dd-mmm-aaaa` (`16-mar-1965`), `dd/mm/aaaa`, `aaaa-mm-dd` o fecha de Excel, documentos con puntos y celulares con espacios o `+57`.
 
 Las fechas con barras se leen como día/mes/año, que es lo usual en Colombia. Revisa en el informe que ninguna haya quedado al revés.
 
-Las filas que no cumplen las validaciones (sección 3.3 del diseño), y los documentos repetidos, **quedan fuera** con su motivo y las demás se cargan. Así pasa con la persona que el profesor trae inválida a propósito: se prueba en el formulario para mostrar el mensaje de error. Si falta una columna, el script dice cuál y no carga nada. Las columnas que no reconoce (por ejemplo, una foto) se ignoran y se listan. Las fotos no se cargan.
+Qué pasa con lo que no cumple:
 
-**A mano.** Si los datos vienen de otra forma (en el cuerpo del correo o en un PDF), copia `database/datos-profesor.plantilla.sql` como `database/datos-profesor.sql` y pon una fila por persona. Si existen los dos archivos, se usa el CSV.
+- Una fila que no cumple las validaciones (sección 3.3 del diseño), o con un documento repetido, **queda fuera** con su motivo y las demás se cargan. Así pasa con la persona que el profesor trae inválida a propósito: se prueba en el formulario para mostrar el mensaje de error.
+- Si la foto no está, no es JPG o PNG, o pesa más de 2 MB, **la persona se carga sin foto** y el informe lo avisa. La foto es opcional.
+- Si falta una columna obligatoria, el script dice cuál y no carga nada.
 
-`datos-profesor.csv` y `datos-profesor.sql` están en `.gitignore`: cada quien los pone en su copia y no se suben.
+**A mano.** Si los datos vienen de otra forma (en el cuerpo del correo o en un PDF), copia `database/datos-profesor.plantilla.sql` como `database/datos-profesor.sql` y pon una fila por persona (sin fotos). Si existe la carpeta, se usa la carpeta.
 
-El script **borra todas las personas, todo el log y el índice del chat**, y después carga las personas con su registro `CREAR` (usuario `datos-profesor`) y ejecuta «Reindexar todo» en n8n. El vaciado y la carga van en una sola transacción: si algo falla, la base queda como estaba. Si la reindexación falla (n8n sin configurar o sin `GEMINI_API_KEY`), los datos quedan cargados y el script indica cómo reindexar a mano.
+El script **borra todas las personas, todo el log y el índice del chat**, y después carga las personas (con su foto) y un registro `CREAR` por cada una (usuario `datos-profesor`), y ejecuta «Reindexar todo» en n8n. El vaciado y la carga van en una sola transacción: si algo falla, la base queda como estaba. Si la reindexación falla (n8n sin configurar o sin `GEMINI_API_KEY`), los datos quedan cargados y el script indica cómo reindexar a mano.
 
 Pruebas del conversor: `npm run test:database`.
 

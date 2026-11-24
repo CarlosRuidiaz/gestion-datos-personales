@@ -3,7 +3,7 @@
 > Este es el documento de contexto del repositorio. Cualquier integrante del equipo, o la IA que use, debe leerlo completo antes de trabajar.
 > Uso: haz `git pull`, abre tu IA en la carpeta del repositorio y pídele «Lee CONTEXTO.md y dime en qué estado está el proyecto y qué me toca hacer».
 
-**Última actualización:** 2026-11-23, por Carlos Ruidiaz (tarea T28)
+**Última actualización:** 2026-11-23, por Carlos Ruidiaz (tarea T29)
 **Fase actual:** Fase 4 · Rediseño visual hecho (T23). Interruptor de Consultar y datos del profesor hechos (T24 y T25). T26 hecha. Para la sustentación solo faltan los datos del profesor
 
 ---
@@ -65,7 +65,7 @@ docker compose ps                      # gateway, postgres, keycloak y n8n en es
 curl -i http://localhost/              # 200: el gateway responde y entrega la aplicación (en el navegador redirige al login de Keycloak)
 docker compose exec -T postgres sh < database/verificar.sh   # esquema, restricciones y permisos: termina con TODO BIEN
 bash keycloak/verificar.sh             # realm, roles, usuarios de prueba y login con PKCE: termina con TODO BIEN (en Windows, con Git Bash)
-npm install && npm test                # pruebas unitarias de libs/common y de los cinco servicios (158, más 10 del conversor de CSV, sin contenedores); por separado: npm run test:common y npm run test:services
+npm install && npm test                # pruebas unitarias de libs/common y de los cinco servicios (158, más 16 del conversor de los datos del profesor, sin contenedores); por separado: npm run test:common y npm run test:services
 bash libs/common/pruebas-integracion.sh   # guard, validaciones y log transaccional contra PostgreSQL y Keycloak reales
 bash services/ms-crear/verificar.sh     # ms-crear de extremo a extremo, por el gateway y con tokens reales
 bash services/ms-modificar/verificar.sh # ms-modificar de extremo a extremo (no necesita ms-crear ni ms-consultar)
@@ -81,8 +81,8 @@ bash n8n/configurar.sh                  # una vez, y cada vez que cambien los fl
 bash n8n/verificar.sh                   # indexación por webhook, reindexación completa y permisos de usr_n8n, con Gemini real
 bash n8n/verificar-chat.sh              # chat (T15): barrera SQL, CP-09, CP-10, memoria y registro en ms-log; pide tu cuenta de n8n
 bash database/cargar-datos-prueba.sh    # 20 personas ficticias con su registro CREAR en el log; se puede repetir. Después, «Reindexar todo» en n8n
-bash database/cargar-datos-profesor.sh  # T25 y T28: BORRA personas, log e índice y deja solo database/datos-profesor.csv (Excel guardado como CSV) o .sql; --revisar muestra qué cargaría sin tocar nada
-npm run test:database                   # pruebas del conversor de CSV del profesor (T28)
+bash database/cargar-datos-profesor.sh  # T25, T28 y T29: BORRA personas, log e índice y deja solo los datos de database/datos-profesor/ (el Excel y el zip de fotos tal como llegan) con sus fotos; --revisar muestra qué cargaría sin tocar nada
+npm run test:database                   # pruebas del conversor de los datos del profesor (T28 y T29)
 ```
 
 Si ya habías arrancado el proyecto antes de T03, tu base de datos local no tiene las tablas: completa las `DB_PASSWORD_*` en tu `.env` y recrea el volumen con `docker compose down -v` antes de volver a arrancar.
@@ -137,8 +137,9 @@ Configuración inicial de n8n (una sola vez): `bash n8n/configurar.sh` carga las
 - T25: `database/cargar-datos-profesor.sh` deja la base solo con `database/datos-profesor.sql` (se crea desde `datos-profesor.plantilla.sql` y no se sube): en una transacción vacía personas, log e índice y carga las personas con su `CREAR`; luego reindexa el chat con el CLI de n8n. Probado con datos ficticios: carga, rechazo completo si una fila es inválida y aviso si falta el archivo. La reindexación no se probó en este equipo (n8n sin configurar ni `GEMINI_API_KEY`).
 - T26: ningún campo de texto del frontend tiene `maxLength` (formulario de persona, búsqueda por documento y filtro del log). Antes el navegador cortaba lo escrito o pegado sin avisar, y un celular de 11 dígitos quedaba cortado a 10 y válido. Ahora el valor completo llega a la validación y se ve su mensaje («El segundo nombre no puede tener más de 30 caracteres», «El celular debe tener exactamente 10 dígitos»). Probado en el navegador con un segundo nombre de 32 caracteres y un celular de 11 dígitos; 89 pruebas del frontend.
 - T28: `cargar-datos-profesor.sh` también lee `database/datos-profesor.csv` (en `.gitignore`) con `database/datos-profesor-csv.mjs`, en Node y sin dependencias. Reconoce separador, codificación (UTF-8 o Windows-1252), encabezados con distintos nombres y valores comunes (CC/TI, M/F, fechas dd/mm/aaaa o de Excel, documentos con puntos, +57). Deja fuera las filas inválidas o repetidas con su motivo y carga las demás. `--revisar` muestra el informe sin tocar la base. Probado con un CSV de Excel en Windows-1252 con punto y coma: 3 personas cargadas con sus tildes y 1 fuera por segundo nombre largo; 10 pruebas con `npm run test:database`. Todavía no se conoce el formato real del correo.
+- T29: los datos del profesor se cargan tal como llegan. `database/datos-profesor.mjs` (antes `datos-profesor-csv.mjs`) lee la carpeta `database/datos-profesor/` (en `.gitignore`): el `.xlsx` (con un lector de zip propio, sin dependencias) o un CSV, y las fotos de los `.zip` o sueltas, asignadas por la columna «Foto». Cada foto se valida (JPG o PNG por contenido, hasta 2 MB) y se envía una sola vez aunque la compartan varias personas; si falta o no es válida, la persona se carga sin foto y se avisa. Probado con el Excel y el zip que el profesor mandó a otro grupo (`grupo_7.xlsx`, 15 personas, 3 fotos): 15 válidas con foto; el SQL se probó en una transacción deshecha (15 personas, 15 fotos, 15 `CREAR`), sin dejar esos datos cargados. 16 pruebas con `npm run test:database`.
 
-**Todavía no existe:** nada del núcleo del sistema. Para la sustentación solo faltan los datos del correo del profesor: guardar su Excel como `database/datos-profesor.csv` (o llenar `datos-profesor.sql`) y correr `bash database/cargar-datos-profesor.sh --revisar` en cuanto lleguen (ver `docs/sustentacion.md`); el rediseño (T23) ya está hecho. T21 se descartó. La base de datos arranca vacía: los datos de prueba se cargan con `bash database/cargar-datos-prueba.sh` (T17), y después hay que ejecutar «Reindexar todo» en n8n.
+**Todavía no existe:** nada del núcleo del sistema. Para la sustentación solo faltan los datos del correo del profesor: poner su Excel y su zip de fotos tal como lleguen en `database/datos-profesor/` y correr `bash database/cargar-datos-profesor.sh --revisar` (ver `docs/sustentacion.md`); el rediseño (T23) ya está hecho. T21 se descartó. La base de datos arranca vacía: los datos de prueba se cargan con `bash database/cargar-datos-prueba.sh` (T17), y después hay que ejecutar «Reindexar todo» en n8n.
 
 **En curso:** ver la columna Estado del tablero.
 
@@ -199,7 +200,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**, **Descartada**.
 | T26 | Que el formulario muestre el error de nombres y apellidos demasiado largos en vez de cortar lo escrito | frontend/ | T12 | Hecha | Carlos Ruidiaz | feat/T26-errores-de-longitud |
 | T27 | Guion y lista de preparación de la sustentación | docs/ | | Hecha | Carlos Ruidiaz | feat/T27-guion-sustentacion |
 | T28 | Cargar los datos del profesor también desde CSV (Excel guardado como CSV): reconocer columnas y valores comunes, validar y dejar fuera las filas inválidas con su motivo | database/ | T25 | Hecha | Carlos Ruidiaz | feat/T28-datos-profesor-csv |
-| T29 | Cargar los datos del profesor tal como llegan: el Excel (.xlsx) y el zip de fotos en `database/datos-profesor/`, con las fotos | database/ | T28 | En curso | Carlos Ruidiaz | feat/T29-excel-y-fotos |
+| T29 | Cargar los datos del profesor tal como llegan: el Excel (.xlsx) y el zip de fotos en `database/datos-profesor/`, con las fotos | database/ | T28 | Hecha | Carlos Ruidiaz | feat/T29-excel-y-fotos |
 
 Después de T05, el trabajo se puede repartir en cuatro frentes paralelos con poco cruce: microservicios (T06 a T10), frontend (T11 a T13), n8n (T14 a T16) y calidad (T17 a T19).
 
@@ -222,6 +223,7 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 
 | Fecha | Decisión | Motivo | Quién |
 | --- | --- | --- | --- |
+| 2026-11-23 | Los datos del profesor se ponen tal como llegan (Excel y zip de fotos) en `database/datos-profesor/`, en lugar de convertirlos a CSV a mano. Una foto que falta o no es válida no deja fuera a la persona: se carga sin foto | Es el formato que recibió otro grupo (`grupo_N.xlsx` y `archivos_jpg.zip`). Convertir a mano el día de la sustentación es donde más se puede fallar. La foto es opcional en el diseño | Carlos Ruidiaz |
 | 2026-11-23 | Del CSV del profesor, las filas inválidas quedan fuera y las demás se cargan (con `datos-profesor.sql` sigue siendo todo o nada) | El profesor trae a propósito al menos una persona inválida; con todo o nada no se cargaría ninguna. Esa persona se prueba en el formulario. Las fechas con barras se leen día/mes/año | Carlos Ruidiaz |
 | 2026-11-23 | `docker-proxy` usa una configuración propia de HAProxy (`services/ms-control/docker-proxy.cfg`) que solo permite `GET /containers/json` y `POST /containers/{id}/stop` y `/start`, y no las variables de la imagen | Con las variables, detener y arrancar exige `POST=1`, y junto con `CONTAINERS=1` eso también permite crear contenedores y exec, es decir, controlar el equipo. `verificar.sh` comprueba que lo demás responde 403 | Carlos Ruidiaz |
 | 2026-11-23 | El apagado y encendido de Consultar no se registran en `log_transaccion`; quedan en la salida de `ms-control` con el usuario | El log es de transacciones sobre personas y su restricción `log_tipo_chk` solo admite cinco tipos. Agregar uno obligaría a recrear el volumen de todos | Carlos Ruidiaz |

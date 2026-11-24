@@ -1,32 +1,33 @@
 #!/bin/sh
-# Deja la base SOLO con los datos del profesor (tareas T25 y T28): vacía las personas, el log y el
-# índice del chat, carga los datos y reindexa el chat en n8n.
+# Deja la base SOLO con los datos del profesor (tareas T25, T28 y T29): vacía las personas, el log y el
+# índice del chat, carga los datos (con sus fotos) y reindexa el chat en n8n.
 # Uso, desde la raíz del repositorio y con todo arriba (en Windows, con Git Bash):
 #
 #   bash database/cargar-datos-profesor.sh --revisar   # solo muestra qué se cargaría; no toca la base
 #   bash database/cargar-datos-profesor.sh             # pide confirmación
 #   bash database/cargar-datos-profesor.sh --si        # sin preguntar (en la sustentación)
 #
-# Los datos se leen de database/datos-profesor.csv (el Excel del profesor guardado como CSV) o, si no
-# existe, de database/datos-profesor.sql (escrito a mano desde la plantilla). Ninguno se sube al
-# repositorio. Del CSV, las filas inválidas quedan fuera con su motivo y las demás se cargan. El
-# vaciado y la carga van en una sola transacción: si algo falla, la base queda como estaba.
+# Los datos se leen de la carpeta database/datos-profesor/, con los archivos tal como llegan por correo:
+# el Excel (.xlsx) o CSV y, si hay, el .zip de fotos (o las fotos sueltas). Si la carpeta no existe, se
+# usa database/datos-profesor.sql (escrito a mano desde la plantilla). Nada de eso se sube al repositorio.
+# Las filas inválidas quedan fuera con su motivo y las demás se cargan. El vaciado y la carga van en una
+# sola transacción: si algo falla, la base queda como estaba.
 
 set -e
 
-CSV=database/datos-profesor.csv
+CARPETA=database/datos-profesor
 SQL=database/datos-profesor.sql
 MODO="${1:-}"
 TMP=$(mktemp)
 trap 'rm -f "$TMP"' EXIT
 
-if [ -f "$CSV" ]; then
+if [ -d "$CARPETA" ]; then
     if ! command -v node >/dev/null 2>&1; then
-        echo "Para leer $CSV hace falta Node.js 22 o superior (el mismo de los microservicios)."
+        echo "Para leer $CARPETA hace falta Node.js 22 o superior (el mismo de los microservicios)."
         exit 1
     fi
-    echo "Leyendo $CSV..."
-    node database/datos-profesor-csv.mjs "$CSV" > "$TMP" || { echo "No se cargó nada."; exit 1; }
+    echo "Leyendo $CARPETA/..."
+    node database/datos-profesor.mjs "$CARPETA" > "$TMP" || { echo "No se cargó nada."; exit 1; }
     echo
 elif [ -f "$SQL" ]; then
     if grep -q "'1000000001', 'Cédula', 'Nombre'" "$SQL"; then
@@ -36,7 +37,7 @@ elif [ -f "$SQL" ]; then
     cp "$SQL" "$TMP"
     echo "Personas en $SQL: $(grep -c "^    ('" "$SQL")"
 else
-    echo "No hay datos del profesor. Guarda su Excel como CSV en $CSV"
+    echo "No hay datos del profesor. Crea la carpeta $CARPETA y pon ahí su Excel y el zip de fotos tal como llegaron"
     echo "(o copia database/datos-profesor.plantilla.sql como $SQL y llénalo a mano)."
     exit 1
 fi
@@ -60,10 +61,9 @@ echo "Vaciando y cargando..."
     echo 'DELETE FROM persona_embedding;'
     cat "$TMP"
     echo 'COMMIT;'
-    echo 'SELECT count(*) AS personas_cargadas FROM persona;'
+    echo 'SELECT count(*) AS personas_cargadas, count(foto) AS con_foto FROM persona;'
 } | docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -q' || {
     echo "No se cargó nada y la base quedó como estaba (mira el error de arriba)."
-    echo "Si es una fila inválida, corrígela o quítala. Las inválidas a propósito se prueban en el formulario."
     exit 1
 }
 
