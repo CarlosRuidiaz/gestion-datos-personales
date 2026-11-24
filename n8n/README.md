@@ -11,7 +11,7 @@ Consulta en lenguaje natural con RAG (sección 7 del diseño). Corre en el conte
 | `verificar.sh` | Prueba la indexación de extremo a extremo, con Gemini y PostgreSQL reales |
 | `verificar-chat.sh` | Prueba el chat: barrera de la herramienta SQL, preguntas de la sección 7.1 del diseño, CP-09, CP-10 y registro en ms-log |
 
-La guía completa de configuración inicial en un equipo limpio es la tarea **T20**.
+La guía completa de instalación y configuración inicial en un equipo limpio está en [`docs/guia-configuracion.md`](../docs/guia-configuracion.md) (tarea T20).
 
 ## Puesta en marcha
 
