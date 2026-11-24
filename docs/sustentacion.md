@@ -23,7 +23,7 @@ Lo que sigue lo contó un compañero de otro grupo que ya presentó (2026-11-23)
 | Pendiente | Tarea | Estado |
 | --- | --- | --- |
 | Interruptor de Consultar en la aplicación | T24 | Hecho |
-| Script para dejar la base solo con los datos del profesor | T25 y T28 | Script hecho, acepta CSV. Falta el correo con los datos |
+| Script para dejar la base solo con los datos del profesor | T25, T28 y T29 | Hecho y probado con el formato que recibió otro grupo (Excel y zip de fotos). Falta nuestro correo |
 | Mensaje de error visible para nombres de más de 30 caracteres | T26 | Hecho |
 | Rediseño visual | T23 | Hecho |
 
@@ -42,17 +42,19 @@ Cómo está hecho, en `services/ms-control/README.md`. En resumen, para explicar
 
 Para ensayarlo: `bash services/ms-control/verificar.sh`.
 
-### 2.2 T25 y T28: datos del profesor
+### 2.2 T25, T28 y T29: datos del profesor
+
+Por lo que recibió otro grupo, el profesor manda un Excel (`grupo_N.xlsx`) con una fila por persona y las mismas columnas del formulario, más una columna «Foto», y un zip con las fotos (`archivos_jpg.zip`). El script ya está probado con ese formato: reconoce las 10 columnas y las fotos, y carga cada persona con la suya.
 
 Cuando llegue el correo:
 
-1. Si trae un Excel, guárdalo como CSV en `database/datos-profesor.csv`. Si los datos vienen de otra forma, llena a mano `database/datos-profesor.sql` desde la plantilla. Ninguno de los dos se sube al repositorio.
-2. Ese mismo día, corre `bash database/cargar-datos-profesor.sh --revisar`. Muestra qué columnas reconoció y qué filas quedan fuera y por qué, sin tocar la base. Si algo no se reconoce, se arregla con tiempo.
+1. Crea `database/datos-profesor/` y pon ahí el Excel y el zip **tal como llegaron**. No se suben al repositorio.
+2. Ese mismo día, corre `bash database/cargar-datos-profesor.sh --revisar`. Muestra qué columnas y fotos reconoció y qué filas quedan fuera y por qué, sin tocar la base.
 3. La persona inválida a propósito (por ejemplo, el segundo nombre de más de 30 caracteres) queda fuera sola. Se prueba en el formulario para mostrar el mensaje de error.
-4. Carga con `bash database/cargar-datos-profesor.sh`. Borra personas, log e índice, carga los datos y reindexa el chat.
+4. Carga con `bash database/cargar-datos-profesor.sh`. Borra personas, log e índice, carga los datos con sus fotos y reindexa el chat.
 5. Ensaya con las preguntas que se crea que hará el profesor y anota aquí las respuestas esperadas.
 
-Detalles de los formatos que acepta, en `database/README.md`. Si en la sustentación pide «borrar todo y dejar solo mis datos», se corre `bash database/cargar-datos-profesor.sh --si`.
+Detalles en `database/README.md`. Si en la sustentación pide «borrar todo y dejar solo mis datos», se corre `bash database/cargar-datos-profesor.sh --si`.
 
 ### 2.3 T26: nombres demasiado largos
 

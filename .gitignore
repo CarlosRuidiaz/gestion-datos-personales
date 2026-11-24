@@ -42,6 +42,6 @@ $RECYCLE.BIN/
 *.swo
 *~
 
-# Datos que el profesor envía por correo para la sustentación (T25). Cada quien los pone en su copia.
+# Datos que el profesor envía por correo para la sustentación (T25 y T29): el Excel y el zip de fotos. Cada quien los pone en su copia.
 database/datos-profesor.sql
-database/datos-profesor.csv
+database/datos-profesor/
