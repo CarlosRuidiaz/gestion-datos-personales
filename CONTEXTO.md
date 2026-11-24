@@ -4,7 +4,7 @@
 > Uso: haz `git pull`, abre tu IA en la carpeta del repositorio y pídele «Lee CONTEXTO.md y dime en qué estado está el proyecto y qué me toca hacer».
 
 **Última actualización:** 2026-11-23, por Claudia Elias (T23 hecha)
-**Fase actual:** Fase 4 · Rediseño visual terminado. Todas las tareas del tablero están hechas o descartadas
+**Fase actual:** Fase 4 · Rediseño visual hecho (T23). Quedan las tareas de la sustentación (T24 a T26)
 
 ---
 
@@ -127,7 +127,9 @@ Configuración inicial de n8n (una sola vez): `bash n8n/configurar.sh` carga las
 
 - T22: propuesta de rediseño visual del frontend en `docs/rediseno/`: `README.md` con el diagnóstico de lo que hoy se ve genérico, el sistema visual (paleta en verde petróleo con contraste WCAG AA medido, tipografía Public Sans servida con `@fontsource-variable/public-sans`, escala de espaciado, radios y botones), cómo debe quedar cada pantalla respetando el menú principal y la distribución del prototipo del enunciado, las herramientas, los pasos de la T23 y una lista para comprobar el resultado. `boceto.html` (se abre con doble clic) muestra la paleta, la tipografía y cuatro pantallas con datos ficticios; revisado en el navegador a 1280 px y a 375 px, sin desplazamiento horizontal. La skill `frontend-design` de Anthropic (Apache 2.0) quedó en `.claude/skills/frontend-design/`: Claude Code la carga sola y las demás IA deben leer su `SKILL.md`. No cambia código de la aplicación: eso es la T23, libre para cualquiera.
 - T23: rediseño visual del frontend aplicado según `docs/rediseno/`. Tipografía Public Sans servida desde la propia imagen (`@fontsource-variable/public-sans` 5.3.0, sin cargar nada de internet) y `estilos.css` reescrito con la paleta en verde petróleo, la escala de espaciado y los radios de la propuesta; la única sombra es la de la confirmación del borrado y el foco se ve en todo. `Marco.tsx` es ahora una barra lateral con las opciones del rol, tomadas de `opcionesDelMenu()` como el menú principal, con la pantalla actual marcada (`NavLink`), Consultar «No disponible» si su servicio está apagado, y el usuario, su rol y «Cerrar sesión» abajo; por debajo de 48 rem pasa arriba con un botón «Menú». El menú principal es un índice en filas en lugar de tarjetas. La ficha de Consultar y Borrar muestra primero el tipo y el número de documento y el nombre completo, luego la fecha de nacimiento y el género, la foto en formato carné a la derecha y, debajo de la línea, el contacto con el celular agrupado (301 111 2233). En la confirmación del borrado «Cancelar» va primero y conserva el foco. En el formulario, documento, fecha y celular tienen ancho corto. En el log, el resultado lleva un punto de color y la cabecera de la tabla queda fija al desplazarse. No cambió la lógica, las rutas, las llamadas a la API ni los permisos. `npm test` pasa con 86 pruebas (se ajustó la de la ficha y hay tres nuevas de la barra lateral por rol), `frontend/verificar.sh` termina en TODO BIEN y se revisó en el navegador el 2026-11-23 con `admin.prueba`, a 1280 px y a 375 px (sin desplazamiento horizontal fuera de la tabla del log): menú, consultar, borrar con la confirmación cancelada, crear con errores, log, menú del móvil, foco con el teclado y ms-consultar apagado (CP-07).
-**Todavía no existe:** nada. Todas las tareas están hechas, salvo T21, que se descartó. La base de datos arranca vacía: los datos de prueba se cargan con `bash database/cargar-datos-prueba.sh` (T17), y después hay que ejecutar «Reindexar todo» en n8n.
+- T27: `docs/sustentacion.md` con cómo es la sustentación (según un grupo que ya presentó), lo que falta preparar (T24 a T26), la lista para el día anterior, el guion de la demostración y las preguntas probables.
+
+**Todavía no existe:** nada del núcleo del sistema. Para la sustentación faltan T24 (interruptor de Consultar), T25 (datos del profesor) y T26 (errores de nombres largos), descritas en `docs/sustentacion.md`; el rediseño (T23) ya está hecho. T21 se descartó. La base de datos arranca vacía: los datos de prueba se cargan con `bash database/cargar-datos-prueba.sh` (T17), y después hay que ejecutar «Reindexar todo» en n8n.
 
 **En curso:** ver la columna Estado del tablero.
 
@@ -183,6 +185,10 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**, **Descartada**.
 | T21 | Opcional: despliegue en Azure for Students | | T20 | Descartada | | |
 | T22 | Propuesta de rediseño visual del frontend: paleta, tipografía, bocetos y guía de herramientas | docs/rediseno/ | T13 | Hecha | Carlos Ruidiaz | feat/T22-propuesta-rediseno |
 | T23 | Aplicar el rediseño visual al frontend según `docs/rediseno/` | frontend/ | T22 | Hecha | Claudia Elias | feat/T23-rediseno-visual |
+| T24 | Interruptor en la aplicación para apagar y encender Consultar (detiene y arranca el contenedor ms-consultar). Ver `docs/sustentacion.md` | services/ms-control/, frontend/, docker-compose.yml | T08, T11 | En curso | Carlos Ruidiaz | feat/T24-interruptor-consultar |
+| T25 | Script para dejar la base solo con los datos del profesor (vaciar personas, log e índice, cargar sus datos y reindexar). Espera los datos del correo | database/ | T17 | En curso | Carlos Ruidiaz | feat/T24-interruptor-consultar |
+| T26 | Que el formulario muestre el error de nombres y apellidos demasiado largos en vez de cortar lo escrito | frontend/ | T12 | Pendiente | | |
+| T27 | Guion y lista de preparación de la sustentación | docs/ | | Hecha | Carlos Ruidiaz | feat/T27-guion-sustentacion |
 
 Después de T05, el trabajo se puede repartir en cuatro frentes paralelos con poco cruce: microservicios (T06 a T10), frontend (T11 a T13), n8n (T14 a T16) y calidad (T17 a T19).
 
@@ -205,6 +211,7 @@ Registro de cualquier decisión que cambie o precise el diseño. La más recient
 
 | Fecha | Decisión | Motivo | Quién |
 | --- | --- | --- | --- |
+| 2026-11-23 | Consultar se podrá apagar y encender también desde la aplicación (T24): un microservicio `ms-control`, solo para el administrador, detiene y arranca los contenedores de `ms-consultar` a través de un proxy del socket de Docker. El comando de DD-04 sigue funcionando | El profesor pide en la sustentación un botón en la interfaz, y que el contenedor quede detenido de verdad. El proxy limita lo que `ms-control` puede pedirle a Docker y evita montar el socket en un servicio expuesto | Carlos Ruidiaz |
 | 2026-11-23 | Se descarta T21 (despliegue opcional en Azure for Students). El sistema se entrega para ejecutarse en local con Docker Compose | Era opcional en el plan y el equipo decidió no hacerla | Carlos Ruidiaz |
 | 2026-11-23 | En la ficha de persona (Consultar y Borrar) ya no aparecen por separado primer nombre, segundo nombre y apellidos: se muestra el nombre completo como título, debajo del tipo y el número de documento. El celular se muestra agrupado de a 3, 3 y 4 cifras. Se ajustó la prueba de la ficha en `consultar-borrar.test.tsx` | Lo pide la propuesta de T22 (sección 5.3): la ficha se lee como un documento de identidad. En el formulario los campos del nombre siguen separados, porque ahí se escriben por separado. Lo guardado no cambia | Claudia Elias |
 | 2026-11-23 | La barra lateral marca sus opciones con `data-navegacion` y no con `data-opcion`, que sigue siendo solo del menú principal | Así las pruebas del menú cuentan sus opciones sin confundirlas con las de la barra lateral | Claudia Elias |
