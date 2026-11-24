@@ -193,7 +193,7 @@ Estados posibles: **Pendiente**, **En curso**, **Hecha**, **Descartada**.
 | T23 | Aplicar el rediseño visual al frontend según `docs/rediseno/` | frontend/ | T22 | Hecha | Claudia Elias | feat/T23-rediseno-visual |
 | T24 | Interruptor en la aplicación para apagar y encender Consultar (detiene y arranca el contenedor ms-consultar). Ver `docs/sustentacion.md` | services/ms-control/, frontend/, docker-compose.yml | T08, T11 | Hecha | Carlos Ruidiaz | feat/T24-interruptor-consultar |
 | T25 | Script para dejar la base solo con los datos del profesor (vaciar personas, log e índice, cargar sus datos y reindexar). Espera los datos del correo | database/ | T17 | Hecha | Carlos Ruidiaz | feat/T24-interruptor-consultar |
-| T26 | Que el formulario muestre el error de nombres y apellidos demasiado largos en vez de cortar lo escrito | frontend/ | T12 | Pendiente | | |
+| T26 | Que el formulario muestre el error de nombres y apellidos demasiado largos en vez de cortar lo escrito | frontend/ | T12 | En curso | Carlos Ruidiaz | feat/T26-errores-de-longitud |
 | T27 | Guion y lista de preparación de la sustentación | docs/ | | Hecha | Carlos Ruidiaz | feat/T27-guion-sustentacion |
 
 Después de T05, el trabajo se puede repartir en cuatro frentes paralelos con poco cruce: microservicios (T06 a T10), frontend (T11 a T13), n8n (T14 a T16) y calidad (T17 a T19).
