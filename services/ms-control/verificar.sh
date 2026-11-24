@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verifica ms-control de extremo a extremo (T24): permisos, apagar y encender ms-consultar desde la API,
+# Verifica ms-control de extremo a extremo: permisos, apagar y encender ms-consultar desde la API,
 # que el contenedor quede detenido de verdad y que las demás opciones sigan funcionando (CP-07).
 # Uso, desde la raíz del repositorio y con todo arriba (en Windows, con Git Bash):
 #

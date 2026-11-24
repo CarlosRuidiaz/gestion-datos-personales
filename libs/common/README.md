@@ -2,7 +2,7 @@
 
 Librería compartida por los cinco microservicios (sección 5.3 del diseño). Cada servicio la compila dentro de su propio contenedor.
 
-Cambiar algo aquí afecta a todos los servicios: regístralo en la sección 7 de `CONTEXTO.md` y avisa al grupo.
+Cambiar algo aquí afecta a todos los servicios.
 
 ## Qué ofrece
 
@@ -19,7 +19,7 @@ Cambiar algo aquí afecta a todos los servicios: regístralo en la sección 7 de
 | `parsearFecha`, `formatearFecha` | Fechas `dd-mmm-yyyy` y `yyyy-mm-dd` |
 | `@Roles`, `@Publico`, `@Auditar`, `@UsuarioActual` | Decoradores de las rutas |
 | `AuditoriaService` | Escribe en el log dentro de la transacción de la operación |
-| `AvisoIndexacionService` | Avisa a n8n que una persona cambió (T16), después del commit y sin esperar la respuesta |
+| `AvisoIndexacionService` | Avisa a n8n que una persona cambió, después del commit y sin esperar la respuesta |
 | `Rol`, `TipoTransaccion`, `ResultadoTransaccion`, `TIPOS_DOCUMENTO`, `GENEROS` | Valores del dominio |
 
 ## Las tres reglas para escribir un microservicio
@@ -86,7 +86,7 @@ Otros detalles:
 - **Formularios `multipart`.** El 403 se decide antes de leer el formulario, así que ese registro del log queda sin número de documento.
 - **Ejemplo real.** `services/ms-crear` es el primer servicio hecho con esta plantilla, con su `verificar.sh`.
 
-### Aviso a n8n (T16)
+### Aviso a n8n
 
 ms-crear, ms-modificar y ms-borrar avisan a n8n para que actualice el vector de la persona (sección 5.2 del diseño, contrato en `n8n/README.md`). El aviso va **después** de que la transacción quedó confirmada y **sin `await`**:
 
@@ -212,4 +212,4 @@ bash libs/common/pruebas-integracion.sh
 
 Montan un microservicio mínimo con `ComunModule`, conectado como `usr_crear`, y comprueban el guard con tokens reales, las validaciones y que la operación y su log se guardan o se deshacen juntos.
 
-Versiones: NestJS 11, TypeORM 0.3, TypeScript 5.9 y Node 24. No se usan las versiones mayores más nuevas (NestJS 12, TypeORM 1, TypeScript 7); el motivo está en la sección 7 de `CONTEXTO.md`.
+Versiones: NestJS 11, TypeORM 0.3, TypeScript 5.9 y Node 24. No se usan las versiones mayores más nuevas (NestJS 12, TypeORM 1, TypeScript 7); el motivo está en `docs/decisiones.md`.

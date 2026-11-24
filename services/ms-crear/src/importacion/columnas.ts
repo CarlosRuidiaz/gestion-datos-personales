@@ -1,5 +1,5 @@
 /**
- * Reconoce las columnas y normaliza los valores de un archivo de personas (T30). La validación de
+ * Reconoce las columnas y normaliza los valores de un archivo de personas. La validación de
  * verdad la hace después CrearPersonaDto, la misma del formulario; aquí solo se convierten formas
  * comunes de escribir lo mismo («CC» → «Cédula», «16/03/1965» → «1965-03-16», «1.043.123.456» → «1043123456»).
  */

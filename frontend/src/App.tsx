@@ -13,7 +13,6 @@ import { ModificarPersona } from './paginas/ModificarPersona';
 
 /**
  * Rutas de la aplicación. Cada opción del menú tiene la suya y queda protegida por rol.
- * Crear y modificar son de T12; consultar, borrar y log, de T13.
  */
 export function App({ usuario }: { usuario: Usuario }) {
   return (

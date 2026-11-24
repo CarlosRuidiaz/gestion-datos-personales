@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { Rol, Roles, UsuarioActual, UsuarioAutenticado } from '@gdp/common';
 import { ConsultarService, EstadoConsultar } from './consultar.service';
 
-/** Solo el administrador puede ver y cambiar el estado de Consultar (T24). */
+/** Solo el administrador puede ver y cambiar el estado de Consultar. */
 @ApiTags('consultar')
 @ApiBearerAuth()
 @Roles(Rol.ADMINISTRADOR)

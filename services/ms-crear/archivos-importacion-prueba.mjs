@@ -1,4 +1,4 @@
-// Crea un Excel y un zip de fotos ficticios con el mismo formato que manda el profesor (T30), para
+// Crea un Excel y un zip de fotos ficticios con el mismo formato que manda el profesor, para
 // services/ms-crear/verificar-importacion.sh. Uso: node services/ms-crear/archivos-importacion-prueba.mjs CARPETA
 // Solo datos ficticios: documentos 99999999xx y correos @example.com.
 import { writeFileSync } from 'node:fs';

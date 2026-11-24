@@ -14,7 +14,7 @@ export class LogController {
 
   /**
    * Sin @Auditar a propósito: revisar el log no es una transacción sobre los datos personales
-   * y la columna tipo no tiene un valor para ello (ver la sección 7 de CONTEXTO.md).
+   * y la columna tipo no tiene un valor para ello.
    * Sin @Roles: la usan los dos roles de la aplicación.
    */
   @Get()

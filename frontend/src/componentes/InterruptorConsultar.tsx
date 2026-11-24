@@ -23,7 +23,7 @@ interface Props {
 }
 
 /**
- * Interruptor del administrador para apagar y encender Consultar (T24, RF-09). ms-control detiene o
+ * Interruptor del administrador para apagar y encender Consultar (RF-09). ms-control detiene o
  * arranca de verdad el contenedor de ms-consultar; después se espera a que el health lo confirme,
  * así el menú y el interruptor muestran lo mismo.
  */

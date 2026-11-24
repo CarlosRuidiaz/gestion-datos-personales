@@ -43,7 +43,7 @@ Los registros de log de estos datos llevan el usuario `datos-prueba`, así se di
 
 ## Datos del profesor (sustentación)
 
-Los datos que manda el profesor (un Excel y un zip de fotos) se cargan **desde la aplicación**, no con un script: en «Crear personas» → «Importar personas desde un archivo», y para dejar la base vacía, en «Borrar personas» → «Borrar todas las personas». Cada persona queda en el log como si se hubiera creado o borrado desde el formulario, y el log nunca se vacía. Ver `services/ms-crear/README.md` y `docs/sustentacion.md` (tarea T30).
+Los datos que manda el profesor (un Excel y un zip de fotos) se cargan **desde la aplicación**, no con un script: en «Crear personas» → «Importar personas desde un archivo», y para dejar la base vacía, en «Borrar personas» → «Borrar todas las personas». Cada persona queda en el log como si se hubiera creado o borrado desde el formulario, y el log nunca se vacía. Ver `services/ms-crear/README.md`.
 
 ## Usuarios y permisos
 
@@ -61,9 +61,9 @@ Ningún usuario puede hacer UPDATE, DELETE ni TRUNCATE sobre `log_transaccion`.
 ## Para quien programe contra esta base
 
 - **El esquema lo define `init.sql`, no el ORM.** En TypeORM, `synchronize` debe ir en `false`: los usuarios de los servicios no pueden crear ni alterar tablas.
-- **Quien inserta en el log no puede leerlo** (salvo `usr_log`). El INSERT no debe usar `RETURNING`, o fallará con `permission denied` (comprobado). Ojo: `save()` e `insert()` de TypeORM agregan `RETURNING id` por su cuenta; el módulo de auditoría (T05) debe insertar con una consulta parametrizada propia o desactivar el `RETURNING`.
+- **Quien inserta en el log no puede leerlo** (salvo `usr_log`). El INSERT no debe usar `RETURNING`, o fallará con `permission denied` (comprobado). Ojo: `save()` e `insert()` de TypeORM agregan `RETURNING id` por su cuenta; el módulo de auditoría debe insertar con una consulta parametrizada propia o desactivar el `RETURNING`.
 - **`foto_tipo`** guarda el tipo MIME: `image/jpeg` o `image/png`. La foto y su tipo van juntos o los dos nulos.
 - **`tipo_documento` y `genero`** guardan el texto tal como lo muestra el formulario (`Cédula`, `Tarjeta de identidad`, `Masculino`, `Femenino`, `No binario`, `Prefiero no reportar`).
 - **`fecha_actualizacion`** la actualiza el servicio que modifica; no hay disparador.
-- **`persona_embedding`** tiene las columnas que usa el nodo Postgres PGVector Store de n8n (`id`, `text`, `metadata`, `embedding`). El documento va en `metadata ->> 'numero_documento'`. La columna `embedding` no fija la dimensión; la decide T14 según el modelo de embeddings.
+- **`persona_embedding`** tiene las columnas que usa el nodo Postgres PGVector Store de n8n (`id`, `text`, `metadata`, `embedding`). El documento va en `metadata ->> 'numero_documento'`. La columna `embedding` no fija la dimensión; la da el modelo de embeddings (`gemini-embedding-001`, 3072).
 - PostgreSQL no publica puertos. Para entrar: `docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'`.

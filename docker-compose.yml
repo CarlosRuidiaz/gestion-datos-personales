@@ -1,7 +1,6 @@
 # Gestión de Datos Personales: orquestación de contenedores (sección 10 del diseño).
 #
-# Estado: están los diez contenedores del diseño (desde la tarea T14), más docker-proxy y ms-control (T24). Cada bloque indica la
-# tarea del tablero de CONTEXTO.md que lo agregó.
+# Contenedores: los diez del diseño, más docker-proxy y ms-control (interruptor de Consultar).
 #
 # Arranque:  cp .env.example .env   (completar contraseñas)
 #            docker compose --profile consultar up -d --build
@@ -15,7 +14,7 @@ networks:
   # Conecta PostgreSQL solo con los microservicios y n8n. El gateway y el frontend no entran aquí.
   datos:
     name: gdp_datos
-  # Solo ms-control y docker-proxy (T24). Interna: no sale a internet ni se publica.
+  # Solo ms-control y docker-proxy. Interna: no sale a internet ni se publica.
   control:
     name: gdp_control
     internal: true
@@ -126,7 +125,7 @@ services:
       KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-gestion-personas}
       TZ: ${TZ:-America/Bogota}
-      # Aviso a n8n después de cada cambio (T16). Si n8n está apagado, el servicio sigue funcionando.
+      # Aviso a n8n después de cada cambio. Si n8n está apagado, el servicio sigue funcionando.
       N8N_WEBHOOK_INDEXACION_URL: ${N8N_WEBHOOK_INDEXACION_URL:-http://n8n:5678/webhook/indexar-persona}
     depends_on:
       postgres:
@@ -155,7 +154,7 @@ services:
       KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-gestion-personas}
       TZ: ${TZ:-America/Bogota}
-      # Aviso a n8n después de cada cambio (T16). Si n8n está apagado, el servicio sigue funcionando.
+      # Aviso a n8n después de cada cambio. Si n8n está apagado, el servicio sigue funcionando.
       N8N_WEBHOOK_INDEXACION_URL: ${N8N_WEBHOOK_INDEXACION_URL:-http://n8n:5678/webhook/indexar-persona}
     depends_on:
       postgres:
@@ -184,7 +183,7 @@ services:
       KEYCLOAK_INTERNAL_URL: ${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-gestion-personas}
       TZ: ${TZ:-America/Bogota}
-      # Aviso a n8n después de cada cambio (T16). Si n8n está apagado, el servicio sigue funcionando.
+      # Aviso a n8n después de cada cambio. Si n8n está apagado, el servicio sigue funcionando.
       N8N_WEBHOOK_INDEXACION_URL: ${N8N_WEBHOOK_INDEXACION_URL:-http://n8n:5678/webhook/indexar-persona}
     depends_on:
       postgres:
@@ -198,7 +197,7 @@ services:
       - traefik.http.routers.ms-borrar.entrypoints=web
       - traefik.http.services.ms-borrar.loadbalancer.server.port=3000
 
-  # --- T10: ms-log. Consulta del log (los dos roles) y registro de las consultas
+  # --- ms-log. Consulta del log (los dos roles) y registro de las consultas
   #     en lenguaje natural que envía n8n con su llave de API (N8N_LOG_API_KEY).
   ms-log:
     build:
@@ -228,13 +227,7 @@ services:
       - traefik.http.routers.ms-log.entrypoints=web
       - traefik.http.services.ms-log.loadbalancer.server.port=3000
 
-  # ---------------------------------------------------------------------------
-  # Servicios pendientes. Son un punto de partida: quien haga la tarea ajusta
-  # imagen, variables y etiquetas, y registra en la sección 7 de CONTEXTO.md lo
-  # que se aparte del diseño.
-  # ---------------------------------------------------------------------------
-
-  # --- T08: ms-consultar (perfil propio: se habilita y deshabilita según demanda, DD-04)
+  # --- ms-consultar (perfil propio: se habilita y deshabilita según demanda, DD-04)
   # Arranca solo con --profile consultar. Sin container_name, para poder escalar:
   #   docker compose --profile consultar up -d --build      # arrancar todo
   #   docker compose stop ms-consultar                       # deshabilitar Consultar
@@ -276,7 +269,7 @@ services:
       - traefik.http.routers.ms-consultar.entrypoints=web
       - traefik.http.services.ms-consultar.loadbalancer.server.port=3000
 
-  # --- T24: interruptor de Consultar en la aplicación -------------------------------
+  # --- interruptor de Consultar en la aplicación -------------------------------
   # docker-proxy es el único que toca el socket de Docker y solo deja listar contenedores,
   # detenerlos y arrancarlos (ver services/ms-control/docker-proxy.cfg). Está en la red interna
   # «control», sin puertos publicados, y solo ms-control llega a él.
@@ -319,7 +312,7 @@ services:
       - traefik.http.routers.ms-control.entrypoints=web
       - traefik.http.services.ms-control.loadbalancer.server.port=3000
 
-  # --- T11: frontend (React servido con Nginx) ----------------------------------
+  # --- frontend (React servido con Nginx) ----------------------------------
   # Atiende todo lo que no es /api. config.js se genera al arrancar con estas variables.
   frontend:
     build: ./frontend
@@ -340,8 +333,8 @@ services:
       - traefik.http.routers.frontend.priority=1
       - traefik.http.services.frontend.loadbalancer.server.port=80
 
-  # --- T14: n8n ----------------------------------------------------------------
-  # Chat RAG (T15) e indexación de embeddings. Sus flujos y credenciales viven en n8n_data;
+  # --- n8n ----------------------------------------------------------------
+  # Chat RAG e indexación de embeddings. Sus flujos y credenciales viven en n8n_data;
   # la primera vez se cargan con «bash n8n/configurar.sh» (ver n8n/README.md).
   # Se conecta a PostgreSQL como usr_n8n: solo lee vista_personas y administra persona_embedding.
   n8n:

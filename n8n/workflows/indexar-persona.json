@@ -29,7 +29,7 @@
         300
       ],
       "parameters": {
-        "jsCode": "// Cuerpo que envían ms-crear, ms-modificar y ms-borrar (T16): { numeroDocumento, operacion }.\n// Solo se usa el documento: los datos de la persona se leen siempre de vista_personas.\nconst cuerpo = $input.first().json.body ?? {};\nconst numeroDocumento = String(cuerpo.numeroDocumento ?? '').trim();\nconst operacion = String(cuerpo.operacion ?? '').trim().toUpperCase();\nconst valido = /^[0-9]{1,10}$/.test(numeroDocumento) && ['CREAR', 'MODIFICAR', 'BORRAR'].includes(operacion);\nreturn [{ json: { valido, numeroDocumento, operacion } }];"
+        "jsCode": "// Cuerpo que envían ms-crear, ms-modificar y ms-borrar: { numeroDocumento, operacion }.\n// Solo se usa el documento: los datos de la persona se leen siempre de vista_personas.\nconst cuerpo = $input.first().json.body ?? {};\nconst numeroDocumento = String(cuerpo.numeroDocumento ?? '').trim();\nconst operacion = String(cuerpo.operacion ?? '').trim().toUpperCase();\nconst valido = /^[0-9]{1,10}$/.test(numeroDocumento) && ['CREAR', 'MODIFICAR', 'BORRAR'].includes(operacion);\nreturn [{ json: { valido, numeroDocumento, operacion } }];"
       }
     },
     {

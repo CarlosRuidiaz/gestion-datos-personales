@@ -76,7 +76,7 @@ export class PersonasService {
   }
 
   /**
-   * Borra todas las personas (T30), una por una con borrar(): cada una con su BORRAR en el log, con
+   * Borra todas las personas, una por una con borrar(): cada una con su BORRAR en el log, con
    * los datos que tenía, y su aviso a n8n. El log no se toca. Devuelve cuántas se borraron.
    */
   async borrarTodas(usuario: UsuarioAutenticado): Promise<{ borradas: number }> {

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Configuración de n8n desde la línea de comandos (tareas T14 y T15). Se puede ejecutar las veces que haga falta.
+# Configuración de n8n desde la línea de comandos. Se puede ejecutar las veces que haga falta.
 #
 #   bash n8n/configurar.sh
 #
@@ -25,7 +25,7 @@ sin_avisos() { grep -v -i -e deprecat -e '^ *- ' -e '^$' -e 'license SDK' || tru
 ID_CRED_POSTGRES=gdpCredPostgres1
 ID_CRED_GEMINI=gdpCredGemini001
 ID_CRED_LOG=gdpCredMsLogKey1
-# Flujos que deben quedar publicados (activos): el webhook de indexación (T14) y el chat (T15).
+# Flujos que deben quedar publicados (activos): el webhook de indexación y el chat.
 PUBLICAR=(gdpIndexarPerson gdpChatConsulta1)
 # Id del webhook del chat (fijo en n8n/workflows/chat-consulta.json): la URL del chat no cambia entre equipos.
 CHAT_URL=http://localhost:5678/webhook/6f1c2a10-0015-4a00-8000-000000000001/chat

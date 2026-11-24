@@ -3,7 +3,7 @@ export interface Configuracion {
   keycloakUrl: string;
   realm: string;
   clientId: string;
-  /** URL del chat de n8n (consulta en lenguaje natural). Vacía hasta la tarea T15. */
+  /** URL del chat de n8n (consulta en lenguaje natural). Vacía si no está configurada. */
   chatUrl: string;
 }
 

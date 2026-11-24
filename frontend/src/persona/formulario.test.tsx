@@ -38,7 +38,7 @@ describe('formulario de persona', () => {
     expect(html).not.toContain('readOnly');
   });
 
-  it('no corta lo que se escribe: un valor demasiado largo llega a la validación y se ve su error (T26)', () => {
+  it('no corta lo que se escribe: un valor demasiado largo llega a la validación y se ve su error', () => {
     const html = dibujar(<FormularioPersona modo="crear" textoBoton="Guardar" alEnviar={sinAccion} />);
     expect(html.toLowerCase()).not.toContain('maxlength');
   });

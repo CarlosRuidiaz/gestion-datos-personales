@@ -1,7 +1,7 @@
 import { inflateRawSync } from 'node:zlib';
 
 /**
- * Lectura de los archivos que se importan (T30): el Excel (.xlsx) o CSV con las personas y el .zip
+ * Lectura de los archivos que se importan: el Excel (.xlsx) o CSV con las personas y el .zip
  * con las fotos. Sin dependencias: un .xlsx es un zip con XML adentro.
  */
 

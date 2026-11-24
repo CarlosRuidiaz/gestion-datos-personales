@@ -1,6 +1,6 @@
 # ms-control
 
-Interruptor de Consultar (tarea T24, RF-09). El administrador apaga y enciende ms-consultar desde el menú principal. Las demás opciones siguen funcionando mientras Consultar está apagado.
+Interruptor de Consultar (RF-09). El administrador apaga y enciende ms-consultar desde el menú principal. Las demás opciones siguen funcionando mientras Consultar está apagado.
 
 | Ruta | Rol | Qué hace |
 | --- | --- | --- |

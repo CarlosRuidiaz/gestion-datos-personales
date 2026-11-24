@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Verificación de n8n de extremo a extremo (tarea T14): flujo de indexación por webhook y
+# Verificación de n8n de extremo a extremo: flujo de indexación por webhook y
 # flujo de reindexación completa, con Gemini y PostgreSQL reales.
 #
 #   docker compose up -d n8n && bash n8n/configurar.sh   # la primera vez
 #   bash n8n/verificar.sh
 #
 # Las personas de prueba (99999999xx) se insertan directamente en PostgreSQL, porque el aviso
-# desde ms-crear, ms-modificar y ms-borrar es la tarea T16. Al final se borran, junto con sus vectores.
+# desde ms-crear, ms-modificar y ms-borrar se prueba aparte, con services/verificar-indexacion.sh. Al final se borran, junto con sus vectores.
 # Cada ejecución llama a Gemini unas diez veces (embeddings), dentro del nivel gratuito.
 source "$(dirname "${BASH_SOURCE[0]}")/../services/verificar-comun.sh"
 export MSYS_NO_PATHCONV=1

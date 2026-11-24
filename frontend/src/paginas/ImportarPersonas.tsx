@@ -33,7 +33,7 @@ const ESTADO: Record<ResultadoImportacion['filas'][number]['estado'], { texto: s
 const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
 
 /**
- * Importar personas desde un archivo (T30), parte de la opción Crear y solo para el administrador.
+ * Importar personas desde un archivo, parte de la opción Crear y solo para el administrador.
  * Primero se revisa el archivo sin guardar nada; al confirmar, ms-crear crea cada persona igual que
  * desde el formulario, con su registro en el log.
  */

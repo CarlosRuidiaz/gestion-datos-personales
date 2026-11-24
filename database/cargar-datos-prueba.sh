@@ -1,5 +1,5 @@
 #!/bin/sh
-# Carga las 20 personas ficticias de prueba y su registro CREAR en el log (tarea T17).
+# Carga las 20 personas ficticias de prueba y su registro CREAR en el log.
 # Uso, desde la raíz del repositorio y con el contenedor postgres arriba (en Windows, con Git Bash):
 #
 #   bash database/cargar-datos-prueba.sh

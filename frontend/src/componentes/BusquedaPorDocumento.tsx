@@ -5,7 +5,7 @@ import type { PersonaApi } from '../persona/tipos';
 const DOCUMENTO = /^[0-9]{1,10}$/;
 
 /**
- * Búsqueda por número de documento. La usa Modificar y la puede reutilizar T13 (consultar y borrar)
+ * Búsqueda por número de documento. La usan Modificar, Consultar y Borrar
  * cambiando la ruta. Un 404 se muestra como «no hay una persona registrada».
  */
 export function BusquedaPorDocumento({

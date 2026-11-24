@@ -315,4 +315,4 @@ El equipo donde se presenta debe probarse con anticipación (sección 12 del dis
 | 15 | `permission denied` o la base no tiene tablas después de cambiar una contraseña | Las contraseñas de la base se asignan una sola vez. Recrea el volumen con `docker compose down -v` (borra los datos locales) y vuelve a arrancar |
 | 16 | Un servicio queda en `Restarting` | `docker compose logs --tail 100 <servicio>`. Casi siempre es una variable de `.env` vacía o incorrecta |
 
-Si algo falla y no está aquí, `CONTEXTO.md` (sección 3) tiene la lista de comprobaciones al día, y cada carpeta (`database/`, `keycloak/`, `n8n/`, `frontend/`, `services/ms-log/`, `tests/postman/`) tiene su propio `README.md`.
+Si algo falla y no está aquí, el `README.md` de la raíz tiene la lista de comprobaciones, y cada carpeta (`database/`, `keycloak/`, `n8n/`, `frontend/`, `services/ms-log/`, `tests/postman/`) tiene su propio `README.md`.

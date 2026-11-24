@@ -1,4 +1,4 @@
--- Datos de prueba: 20 personas ficticias y su registro CREAR en el log (tarea T17).
+-- Datos de prueba: 20 personas ficticias y su registro CREAR en el log.
 -- Se ejecuta con el superusuario, a mano, después de que la base ya existe:
 --
 --   bash database/cargar-datos-prueba.sh

@@ -48,11 +48,11 @@ Respuesta, del registro más reciente al más antiguo:
 
 - `id` va como texto (es `BIGSERIAL`) y `fechaHora` en ISO 8601 (UTC). Para mostrarla en hora local, basta con `new Date(fechaHora)` en el navegador.
 - Un filtro inválido responde 400 con el formato común `errores: [{ campo, mensaje }]`.
-- Consultar el log **no** se registra en el log: no es una transacción sobre los datos personales (sección 7 de `CONTEXTO.md`).
+- Consultar el log **no** se registra en el log: no es una transacción sobre los datos personales (ver `docs/decisiones.md`).
 
 ### `POST /api/log/consulta-nl`
 
-La usa el flujo de chat de n8n (T15) al terminar cada consulta, también cuando el modelo falla. No lleva token de Keycloak: lleva la llave `N8N_LOG_API_KEY` en la cabecera `X-API-Key`.
+La usa el flujo de chat de n8n al terminar cada consulta, también cuando el modelo falla. No lleva token de Keycloak: lleva la llave `N8N_LOG_API_KEY` en la cabecera `X-API-Key`.
 
 ```json
 {

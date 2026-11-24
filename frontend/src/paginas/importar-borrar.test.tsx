@@ -14,7 +14,7 @@ vi.mock('../auth/ContextoSesion', () => ({
 
 const dibujar = (elemento: React.ReactElement) => renderToStaticMarkup(<MemoryRouter>{elemento}</MemoryRouter>);
 
-describe('importar personas (T30)', () => {
+describe('importar personas', () => {
   it('Crear personas enlaza a la importación', () => {
     const html = dibujar(<CrearPersona />);
     expect(html).toContain('href="/crear/importar"');
@@ -30,7 +30,7 @@ describe('importar personas (T30)', () => {
   });
 });
 
-describe('borrar todas las personas (T30)', () => {
+describe('borrar todas las personas', () => {
   it('aparece en Borrar personas, debajo de la búsqueda, y empieza cerrado', () => {
     const html = dibujar(<BorrarPersona />);
     expect(html.indexOf('busqueda-documento')).toBeLessThan(html.indexOf('data-borrar-todas'));

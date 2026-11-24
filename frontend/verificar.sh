@@ -40,7 +40,7 @@ config=$(curl -s "$APP/config.js")
 comprobar "apunta al Keycloak público"   contiene "$config" "\"keycloakUrl\": \"$KC\""
 comprobar "con el realm de .env"         contiene "$config" "\"realm\": \"$REALM\""
 comprobar "y el cliente público"         contiene "$config" "\"clientId\": \"$CLIENTE\""
-comprobar "incluye la URL del chat de n8n (vacía hasta T15)" contiene "$config" "\"chatUrl\": \"$(env_var N8N_CHAT_URL)\""
+comprobar "incluye la URL del chat de n8n (vacía si no está configurada)" contiene "$config" "\"chatUrl\": \"$(env_var N8N_CHAT_URL)\""
 comprobar "no contiene llaves ni contraseñas" no_contiene "$config" "$(env_var N8N_LOG_API_KEY)"
 igual "nunca queda en caché" "no-store" "$(cabecera "$(cabeceras "$APP/config.js")" Cache-Control)"
 

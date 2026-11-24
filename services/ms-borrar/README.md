@@ -1,12 +1,12 @@
 # ms-borrar
 
-Microservicio NestJS de la opción **Borrar Personas** (tarea T09). Ruta en el gateway: `/api/borrar`. Usuario de base de datos: `usr_borrar`.
+Microservicio NestJS de la opción **Borrar Personas**. Ruta en el gateway: `/api/borrar`. Usuario de base de datos: `usr_borrar`.
 
 | Método y ruta | Rol | Respuestas |
 | --- | --- | --- |
 | `GET /api/borrar/personas/{documento}` | administrador | 200, 400, 401, 403, 404 |
 | `DELETE /api/borrar/personas/{documento}` | administrador | 204, 400, 401, 403, 404 |
-| `DELETE /api/borrar/personas?confirmacion=BORRAR TODAS` | administrador | 200 `{ borradas }`, 400 sin la confirmación exacta, 401, 403. Borra todas las personas (T30) |
+| `DELETE /api/borrar/personas?confirmacion=BORRAR TODAS` | administrador | 200 `{ borradas }`, 400 sin la confirmación exacta, 401, 403. Borra todas las personas |
 | `GET /api/borrar/docs` | sin token | Documentación OpenAPI (`/api/borrar/docs-json` en JSON) |
 
 ## Cómo se usa (CU-06)
@@ -16,7 +16,7 @@ Microservicio NestJS de la opción **Borrar Personas** (tarea T09). Ruta en el g
 
 Los rechazos (400, 403 y 404) quedan en el log con resultado `ERROR`. Borrar dos veces la misma persona da 404 la segunda vez.
 
-## Borrar todas las personas (T30)
+## Borrar todas las personas
 
 Para dejar la base vacía antes de importar los datos del profesor. En la pantalla «Borrar personas», debajo de la búsqueda, hay que escribir `BORRAR TODAS` para confirmar. El servicio borra las personas una por una con el mismo método que el borrado individual: cada una tiene su `BORRAR` en el log con los datos que tenía, y su aviso a n8n para quitar el vector. El log no se toca. `services/ms-crear/verificar-importacion.sh` comprueba los permisos y la confirmación sin borrar nada de verdad.
 
@@ -30,11 +30,11 @@ bash services/ms-borrar/verificar.sh
 
 Debe terminar con `TODO BIEN`. Inserta sus propias personas de prueba en la base de datos, así que no necesita ms-crear. Si ms-consultar está encendido, lo apaga un momento para comprobar que borrar funciona sin él, y lo vuelve a encender.
 
-## Pendiente en otras tareas
+## Integración
 
-- (T16 hecha: después de borrar avisa a n8n con `BORRAR`, para que quite el vector de la persona. Ver `libs/common/README.md`, sección «Aviso a n8n».)
-- (T13 hecha: la pantalla de borrar del frontend, con la confirmación, está en `frontend/src/paginas/BorrarPersona.tsx`.)
-- **T18:** pruebas unitarias con Jest.
+- **Aviso a n8n:** después de borrar avisa con `BORRAR`, para que quite el vector de la persona. Ver `libs/common/README.md`, sección «Aviso a n8n».
+- **Pantalla:** la de borrar, con la confirmación, está en `frontend/src/paginas/BorrarPersona.tsx`.
+- **Pruebas unitarias:** Jest, en `src/*.spec.ts` (`npm test -w ms-borrar`).
 
 ## Archivos
 
