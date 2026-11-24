@@ -23,7 +23,7 @@ Lo que sigue lo contó un compañero de otro grupo que ya presentó (2026-11-23)
 | Pendiente | Tarea | Estado |
 | --- | --- | --- |
 | Interruptor de Consultar en la aplicación | T24 | Hecho |
-| Script para dejar la base solo con los datos del profesor | T25 | Script hecho. Falta poner los datos del correo en `database/datos-profesor.sql` |
+| Script para dejar la base solo con los datos del profesor | T25 y T28 | Script hecho, acepta CSV. Falta el correo con los datos |
 | Mensaje de error visible para nombres de más de 30 caracteres | T26 | Hecho |
 | Rediseño visual | T23 | Hecho |
 
@@ -42,16 +42,17 @@ Cómo está hecho, en `services/ms-control/README.md`. En resumen, para explicar
 
 Para ensayarlo: `bash services/ms-control/verificar.sh`.
 
-### 2.2 T25: datos del profesor
+### 2.2 T25 y T28: datos del profesor
 
-Cuando lleguen los datos del correo, sigue los pasos de `database/README.md` («Dejar solo los datos del profesor»):
+Cuando llegue el correo:
 
-1. Copia `database/datos-profesor.plantilla.sql` como `database/datos-profesor.sql` (no se sube al repositorio) y pon una fila por persona.
-2. Deja **fuera** del archivo a la persona con datos inválidos a propósito (por ejemplo, el segundo nombre de más de 30 caracteres). Si una fila no cumple las validaciones, el script no carga nada. Esa persona se prueba en el formulario, para mostrar el mensaje de error.
-3. Ejecuta `bash database/cargar-datos-profesor.sh`. Borra personas, log e índice, carga los datos y reindexa el chat.
-4. Ensaya con las preguntas que se crea que hará el profesor y anota aquí las respuestas esperadas.
+1. Si trae un Excel, guárdalo como CSV en `database/datos-profesor.csv`. Si los datos vienen de otra forma, llena a mano `database/datos-profesor.sql` desde la plantilla. Ninguno de los dos se sube al repositorio.
+2. Ese mismo día, corre `bash database/cargar-datos-profesor.sh --revisar`. Muestra qué columnas reconoció y qué filas quedan fuera y por qué, sin tocar la base. Si algo no se reconoce, se arregla con tiempo.
+3. La persona inválida a propósito (por ejemplo, el segundo nombre de más de 30 caracteres) queda fuera sola. Se prueba en el formulario para mostrar el mensaje de error.
+4. Carga con `bash database/cargar-datos-profesor.sh`. Borra personas, log e índice, carga los datos y reindexa el chat.
+5. Ensaya con las preguntas que se crea que hará el profesor y anota aquí las respuestas esperadas.
 
-Si en la sustentación pide «borrar todo y dejar solo mis datos», se corre `bash database/cargar-datos-profesor.sh --si`. No hace falta borrar persona por persona.
+Detalles de los formatos que acepta, en `database/README.md`. Si en la sustentación pide «borrar todo y dejar solo mis datos», se corre `bash database/cargar-datos-profesor.sh --si`.
 
 ### 2.3 T26: nombres demasiado largos
 
